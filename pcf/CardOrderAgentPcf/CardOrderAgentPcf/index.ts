@@ -1,6 +1,6 @@
 import { IInputs, IOutputs } from "./generated/ManifestTypes";
 
-export class CardOrderAgentPcfLast23 implements ComponentFramework.StandardControl<IInputs, IOutputs> {
+export class CardOrderAgentPcfLast27 implements ComponentFramework.StandardControl<IInputs, IOutputs> {
     private static readonly DEFAULT_COLUMN_CANDIDATES = {
         createdBy: ["Author", "createdby", "Created By", "Cree par", "Creer par"],
         createdOn: ["Created", "created", "createdon", "Cree", "Creer"],
@@ -59,6 +59,7 @@ export class CardOrderAgentPcfLast23 implements ComponentFramework.StandardContr
     private selectedStatus = "all";
     private takeModal?: HTMLDivElement;
     private cancelOrderModal?: HTMLDivElement;
+    private seeMoreModal?: HTMLDivElement;
 
     constructor() {
         // Empty
@@ -149,6 +150,7 @@ export class CardOrderAgentPcfLast23 implements ComponentFramework.StandardContr
     public destroy(): void {
         this.closeTakeModal();
         this.closeCancelOrderModal();
+        this.closeSeeMoreModal();
         if (this.cleanModal && this.cleanModal.parentElement) {
             this.cleanModal.parentElement.removeChild(this.cleanModal);
         }
@@ -200,15 +202,15 @@ export class CardOrderAgentPcfLast23 implements ComponentFramework.StandardContr
             context.parameters.statusColumn.raw,
             context.parameters.quantityColumn.raw,
             context.parameters.createdOnColumn.raw,
-            ...CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.orderNumber,
-            ...CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.createdBy,
-            ...CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.status,
-            ...CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.quantity,
-            ...CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.modifiedOn,
-            ...CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.createdOn,
-            ...CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.itemId,
-            ...CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.note,
-            ...CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.products
+            ...CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.orderNumber,
+            ...CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.createdBy,
+            ...CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.status,
+            ...CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.quantity,
+            ...CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.modifiedOn,
+            ...CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.createdOn,
+            ...CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.itemId,
+            ...CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.note,
+            ...CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.products
         ]
             .map((value) => value?.trim() ?? "")
             .filter((value) => value.length > 0);
@@ -560,7 +562,7 @@ export class CardOrderAgentPcfLast23 implements ComponentFramework.StandardContr
             width: "100%"
         });
 
-        const productsBlock = this.createProductsBlock(record.products);
+        const productsBlock = this.createProductsBlock(record.products, context, record);
         if (productsBlock) {
             middle.appendChild(productsBlock);
         }
@@ -581,7 +583,8 @@ export class CardOrderAgentPcfLast23 implements ComponentFramework.StandardContr
         if (record.actionLabel && record.actionName && record.nextStatus) {
             const actionName = record.actionName;
             const nextStatus = record.nextStatus;
-            const isViewAction = actionName === "serve";
+            const actionLabelNormalized = this.normalize(record.actionLabel);
+            const isViewAction = actionLabelNormalized === "view" || actionLabelNormalized === "voir";
             const button = this.createElement("button", {
                 alignItems: isViewAction ? "flex-start" : "center",
                 background: isViewAction ? "transparent" : "#121926",
@@ -615,7 +618,7 @@ export class CardOrderAgentPcfLast23 implements ComponentFramework.StandardContr
                 gap: isViewAction ? "0px" : "6px"
             });
             
-            const buttonLabel = isViewAction ? this.getLocalizedActionLabel("View", this.getLanguage(context)) : this.getLocalizedActionLabel(record.actionLabel, this.getLanguage(context));
+            const buttonLabel = record.actionLabel;
             buttonContent.appendChild(this.createElement("span", undefined, buttonLabel));
             if (!isViewAction) {
                 const iconSvg = this.createActionIcon(actionName);
@@ -951,6 +954,222 @@ export class CardOrderAgentPcfLast23 implements ComponentFramework.StandardContr
             this.takeModal.parentElement.removeChild(this.takeModal);
         }
         this.takeModal = undefined;
+    }
+
+    private closeSeeMoreModal(): void {
+        if (this.seeMoreModal && this.seeMoreModal.parentElement) {
+            this.seeMoreModal.parentElement.removeChild(this.seeMoreModal);
+        }
+        this.seeMoreModal = undefined;
+    }
+
+    private openSeeMoreModal(
+        context: ComponentFramework.Context<IInputs>,
+        record: OrderRecordViewModel
+    ): void {
+        this.closeSeeMoreModal();
+
+        const overlay = this.createElement("div", {
+            alignItems: "center",
+            background: "rgba(16, 24, 40, 0.45)",
+            bottom: "0",
+            display: "flex",
+            justifyContent: "center",
+            left: "0",
+            padding: "16px",
+            position: "fixed",
+            right: "0",
+            top: "0",
+            zIndex: "9999"
+        });
+
+        const modalCard = this.createElement("div", {
+            background: "#ffffff",
+            border: "1px solid #eaecf0",
+            borderRadius: "11px",
+            boxShadow: "0 10px 24px rgba(16, 24, 40, 0.2)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+            maxHeight: "90vh",
+            maxWidth: "420px",
+            overflowY: "auto",
+            position: "relative",
+            width: "100%"
+        });
+
+        const closeBtn = this.createElement("button", {
+            alignItems: "center",
+            background: "transparent",
+            border: "none",
+            color: "#344054",
+            cursor: "pointer",
+            display: "inline-flex",
+            fontFamily: "Inter, Segoe UI, sans-serif",
+            fontSize: "24px",
+            fontWeight: "400",
+            height: "28px",
+            justifyContent: "center",
+            lineHeight: "1",
+            padding: "0",
+            width: "28px"
+        }, "×") as HTMLButtonElement;
+        closeBtn.type = "button";
+        closeBtn.addEventListener("click", () => {
+            this.closeSeeMoreModal();
+        });
+
+        const header = this.createElement("div", {
+            alignItems: "flex-start",
+            display: "flex",
+            gap: "12px",
+            justifyContent: "space-between",
+            padding: "15px 16px 12px 16px"
+        });
+
+        const left = this.createElement("div", {
+            alignItems: "flex-start",
+            display: "flex",
+            flex: "1 1 auto",
+            gap: "10px",
+            minWidth: "0"
+        });
+
+        const avatar = this.createAvatar(record, context.parameters.defaultUserPhoto.raw ?? undefined);
+        const details = this.createElement("div", {
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px",
+            minWidth: "0"
+        });
+
+        details.appendChild(this.createElement("div", {
+            color: "#667085",
+            fontFamily: "Inter, Segoe UI, sans-serif",
+            fontSize: "10px",
+            fontStyle: "italic",
+            fontWeight: "500",
+            lineHeight: "15px"
+        }, record.orderNumber));
+
+        details.appendChild(this.createElement("div", {
+            color: "#101828",
+            fontFamily: "Inter, Segoe UI, sans-serif",
+            fontSize: "14px",
+            fontWeight: "600",
+            lineHeight: "20px",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap"
+        }, record.createdBy));
+
+        const meta = this.createElement("div", {
+            color: "#667085",
+            display: "flex",
+            flexWrap: "wrap",
+            fontFamily: "Inter, Segoe UI, sans-serif",
+            fontSize: "10px",
+            fontWeight: "700",
+            gap: "4px",
+            lineHeight: "16px"
+        });
+        const hideItemCount = this.shouldHideItemCount(record.status);
+        if (!hideItemCount) {
+            meta.appendChild(this.createElement("span", {
+                fontWeight: "400"
+            }, this.formatQuantity(record.quantity, this.getLanguage(context))));
+            meta.appendChild(this.createElement("span", undefined, "•"));
+        }
+        meta.appendChild(this.createElement("span", {
+            fontWeight: "400"
+        }, record.createdTime));
+        details.appendChild(meta);
+
+        left.appendChild(avatar);
+        left.appendChild(details);
+
+        const badgeTheme = this.getStatusTheme(record.status);
+        const badge = this.createElement("div", {
+            alignItems: "center",
+            background: badgeTheme.background,
+            borderRadius: "2px",
+            display: "flex",
+            flex: "0 0 auto",
+            justifyContent: "center",
+            minWidth: "93px",
+            padding: "5px 10px"
+        });
+        badge.appendChild(this.createElement("span", {
+            color: badgeTheme.foreground,
+            fontFamily: "Nunito Sans, Inter, Segoe UI, sans-serif",
+            fontSize: "12px",
+            fontWeight: "700",
+            lineHeight: "16px",
+            textAlign: "center"
+        }, this.getLocalizedStatus(record.status, this.getLanguage(context))));
+
+        const headerRight = this.createElement("div", {
+            alignItems: "center",
+            display: "flex",
+            flex: "0 0 auto",
+            gap: "6px"
+        });
+        headerRight.appendChild(badge);
+        headerRight.appendChild(closeBtn);
+
+        header.appendChild(left);
+        header.appendChild(headerRight);
+
+        const middle = this.createElement("div", {
+            borderTop: "1px solid #eaecf0",
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+            padding: "14px 16px",
+            width: "100%"
+        });
+
+        record.products.forEach((item) => {
+            const row = this.createElement("div", {
+                alignItems: "center",
+                display: "flex",
+                gap: "12px"
+            });
+
+            row.appendChild(this.createElement("span", {
+                color: "#667085",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "14px",
+                fontWeight: "500",
+                lineHeight: "20px"
+            }, item.quantity));
+
+            row.appendChild(this.createElement("span", {
+                color: "#101828",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "14px",
+                fontWeight: "700",
+                lineHeight: "20px",
+                flex: "1 1 auto",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap"
+            }, item.label));
+
+            middle.appendChild(row);
+        });
+
+        const noteBlock = this.createNoteBlock(context, record.note);
+        if (noteBlock) {
+            middle.appendChild(noteBlock);
+        }
+
+        modalCard.appendChild(header);
+        modalCard.appendChild(middle);
+
+        overlay.appendChild(modalCard);
+        document.body.appendChild(overlay);
+        this.seeMoreModal = overlay;
     }
 
     private cleanModal?: HTMLDivElement;
@@ -1614,47 +1833,47 @@ export class CardOrderAgentPcfLast23 implements ComponentFramework.StandardContr
         const orderNumberColumn = this.resolveColumnName(
             orders,
             context.parameters.orderNumberColumn.raw,
-            CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.orderNumber
+            CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.orderNumber
         );
         const createdByColumn = this.resolveColumnName(
             orders,
             context.parameters.createdByColumn.raw,
-            CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.createdBy
+            CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.createdBy
         );
         const statusColumn = this.resolveColumnName(
             orders,
             context.parameters.statusColumn.raw,
-            CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.status
+            CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.status
         );
         const quantityColumn = this.resolveColumnName(
             orders,
             context.parameters.quantityColumn.raw,
-            CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.quantity
+            CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.quantity
         );
         const itemIdColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.itemId
+            CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.itemId
         );
         const modifiedOnColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.modifiedOn
+            CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.modifiedOn
         );
         const createdOnColumn = this.resolveColumnName(
             orders,
             context.parameters.createdOnColumn.raw,
-            CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.createdOn
+            CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.createdOn
         );
         const noteColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.note
+            CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.note
         );
         const productsColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast23.DEFAULT_COLUMN_CANDIDATES.products
+            CardOrderAgentPcfLast27.DEFAULT_COLUMN_CANDIDATES.products
         );
 
         return orders.sortedRecordIds
@@ -1713,7 +1932,7 @@ export class CardOrderAgentPcfLast23 implements ComponentFramework.StandardContr
         const status = this.getDisplayValue(record, statusColumn, "Unknown");
         const quantity = this.getDisplayValue(record, quantityColumn, "-");
         const productsRaw = productsColumn ? record.getValue(productsColumn) : undefined;
-        const products = productsColumn ? this.getProducts(productsRaw) : [];
+        const products = productsColumn ? this.getProducts(productsRaw, language ?? "en") : [];
         const takeProducts = productsColumn ? this.getTakeProducts(productsRaw, language ?? "en") : [];
         const itemId = this.getSharePointItemId(record, itemIdColumn, datasetRecordId);
         const action = this.getActionForStatus(status, createdBy, currentUserName ?? "", this.getLanguageFromStatus(status));
@@ -1738,59 +1957,85 @@ export class CardOrderAgentPcfLast23 implements ComponentFramework.StandardContr
         };
     }
 
-    private createProductsBlock(products: ProductLine[]): HTMLDivElement | undefined {
+    private createProductsBlock(products: ProductLine[], context?: ComponentFramework.Context<IInputs>, record?: OrderRecordViewModel): HTMLDivElement | undefined {
         if (products.length === 0) {
             return undefined;
         }
 
         const block = this.createElement("div", {
-            alignItems: "flex-start",
-            boxSizing: "border-box",
             display: "flex",
             flexDirection: "column",
-            gap: "10px",
-            minHeight: "86px",
-            padding: "0",
+            gap: "12px",
             width: "100%"
         });
 
-        products.forEach((item) => {
+        const MAX_VISIBLE = 5;
+        const itemsToShow = products.slice(0, MAX_VISIBLE);
+        
+        itemsToShow.forEach((item) => {
             const row = this.createElement("div", {
-                alignItems: "baseline",
-                background: "#f5f5f5",
-                borderRadius: "999px",
+                alignItems: "center",
                 display: "flex",
-                gap: "0",
-                maxWidth: "100%",
-                padding: "6px 8px",
-                width: "fit-content"
+                gap: "12px"
             });
 
             row.appendChild(this.createElement("span", {
-                color: "rgba(93, 107, 152, 1)",
+                color: "#667085",
                 fontFamily: "Inter, Segoe UI, sans-serif",
-                fontSize: "12px",
-                fontWeight: "700",
-                lineHeight: "18px",
-                textAlign: "left"
+                fontSize: "14px",
+                fontWeight: "500",
+                lineHeight: "20px"
             }, item.quantity));
 
             row.appendChild(this.createElement("span", {
-                color: "rgba(93, 107, 152, 1)",
+                color: "#101828",
                 fontFamily: "Inter, Segoe UI, sans-serif",
-                fontSize: "12px",
+                fontSize: "14px",
                 fontWeight: "700",
-                lineHeight: "18px",
-                marginLeft: "2px"
+                lineHeight: "20px",
+                flex: "1 1 auto",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap"
             }, item.label));
 
             block.appendChild(row);
         });
 
+        if (products.length > MAX_VISIBLE && context && record) {
+            const seeMoreLink = this.createElement("button", {
+                background: "transparent",
+                border: "none",
+                color: "#121926",
+                cursor: "pointer",
+                display: "block",
+                alignSelf: "flex-start",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "13px",
+                fontWeight: "500",
+                marginTop: "8px",
+                padding: "0",
+                textAlign: "left",
+                textDecoration: "underline"
+            }) as HTMLButtonElement;
+            seeMoreLink.type = "button";
+            seeMoreLink.textContent = `See more (${products.length - MAX_VISIBLE} more)`;
+            seeMoreLink.addEventListener("click", () => {
+                if (record.actionName && record.nextStatus) {
+                    // Has action button: open the same modal as the button
+                    this.openTakeModal(context, record, record.actionName, record.nextStatus);
+                } else {
+                    // No action button: open separate modal
+                    this.openSeeMoreModal(context, record);
+                }
+            });
+            block.appendChild(seeMoreLink);
+        }
+
         return block;
     }
 
-    private getProducts(value: unknown): ProductLine[] {
+    private getProducts(value: unknown, language: LanguageCode = "en"): ProductLine[] {
         if (!value) {
             return [];
         }
@@ -1803,7 +2048,7 @@ export class CardOrderAgentPcfLast23 implements ComponentFramework.StandardContr
 
             if ((trimmed.startsWith("[") && trimmed.endsWith("]")) || (trimmed.startsWith("{") && trimmed.endsWith("}"))) {
                 try {
-                    return this.getProducts(JSON.parse(trimmed));
+                    return this.getProducts(JSON.parse(trimmed), language);
                 } catch {
                     return [];
                 }
@@ -1813,9 +2058,7 @@ export class CardOrderAgentPcfLast23 implements ComponentFramework.StandardContr
         }
 
         if (Array.isArray(value)) {
-            return value
-                .map((item) => this.toProductLine(item))
-                .filter((item): item is ProductLine => Boolean(item));
+            return value.flatMap((item) => this.getProducts(item, language));
         }
 
         if (typeof value !== "object") {
@@ -1823,13 +2066,18 @@ export class CardOrderAgentPcfLast23 implements ComponentFramework.StandardContr
         }
 
         const record = value as Record<string, unknown>;
-        const nestedCollection = this.getFirstArray(record, ["items", "Items", "products", "Products", "produits", "Produits", "value", "Value"]);
+        const nestedCollection = this.getFirstArray(record, ["items", "Items", "products", "Products", "produits", "Produits", "Lignes", "value", "Value"]);
         if (nestedCollection) {
-            return this.getProducts(nestedCollection);
+            return this.getProducts(nestedCollection, language);
         }
 
-        const single = this.toProductLine(record);
-        return single ? [single] : [];
+        const detailedProduct = this.toTakeProductLine(record, language);
+        if (detailedProduct) {
+            return [detailedProduct];
+        }
+
+        const groupedProduct = this.toProductLine(record);
+        return groupedProduct ? [groupedProduct] : [];
     }
 
     private getTakeProducts(value: unknown, language: LanguageCode): ProductLine[] {
@@ -2651,30 +2899,30 @@ export class CardOrderAgentPcfLast23 implements ComponentFramework.StandardContr
         const normalized = this.toCanonicalStatus(status);
 
         if (normalized === "toPrepare") {
-            return CardOrderAgentPcfLast23.CARD_STATUSES.toPrepare;
+            return CardOrderAgentPcfLast27.CARD_STATUSES.toPrepare;
         }
 
         if (normalized === "inPrep") {
-            return CardOrderAgentPcfLast23.CARD_STATUSES.inPrep;
+            return CardOrderAgentPcfLast27.CARD_STATUSES.inPrep;
         }
 
         if (normalized === "served") {
-            return CardOrderAgentPcfLast23.CARD_STATUSES.served;
+            return CardOrderAgentPcfLast27.CARD_STATUSES.served;
         }
 
         if (normalized === "toClean") {
-            return CardOrderAgentPcfLast23.CARD_STATUSES.toClean;
+            return CardOrderAgentPcfLast27.CARD_STATUSES.toClean;
         }
 
         if (normalized === "cleaned") {
-            return CardOrderAgentPcfLast23.CARD_STATUSES.cleaned;
+            return CardOrderAgentPcfLast27.CARD_STATUSES.cleaned;
         }
 
         if (normalized === "cancelled") {
-            return CardOrderAgentPcfLast23.CARD_STATUSES.cancelled;
+            return CardOrderAgentPcfLast27.CARD_STATUSES.cancelled;
         }
 
-        return CardOrderAgentPcfLast23.CARD_STATUSES.unknown;
+        return CardOrderAgentPcfLast27.CARD_STATUSES.unknown;
     }
 
     private shouldHideItemCount(status: string): boolean {

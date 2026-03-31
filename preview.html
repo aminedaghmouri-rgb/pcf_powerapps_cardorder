@@ -200,41 +200,31 @@
         }
 
         .items-block {
-            align-items: flex-start;
-            box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            min-height: 86px;
-            padding: 0;
+            gap: 12px;
             width: 100%;
         }
 
         .item-row {
-            align-items: baseline;
-            background: #f5f5f5;
-            border-radius: 999px;
+            align-items: center;
             display: flex;
-            gap: 0;
-            max-width: 100%;
-            padding: 6px 8px;
-            width: fit-content;
+            gap: 12px;
         }
 
         .item-qty {
-            color: rgba(93, 107, 152, 1);
-            font-size: 12px;
-            font-weight: 700;
-            line-height: 18px;
-            text-align: left;
+            color: #667085;
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 20px;
         }
 
         .item-label {
-            color: rgba(93, 107, 152, 1);
-            font-size: 12px;
+            color: #101828;
+            flex: 1 1 auto;
+            font-size: 14px;
             font-weight: 700;
-            line-height: 18px;
-            margin-left: 2px;
+            line-height: 20px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -710,6 +700,56 @@
                     <div class="actions">
                         <button class="view-btn" type="button">
                             <span>View</span>
+                        </button>
+                    </div>
+                </article>
+
+                <article class="card" data-status="toPrepare">
+                    <div class="card-head">
+                        <div class="user">
+                            <div class="avatar">SL</div>
+                            <div class="name-wrap">
+                                <div class="order">Order #64</div>
+                                <div class="name">Sarah Laurent</div>
+                            </div>
+                        </div>
+                        <span class="badge to-prepare">To prepare</span>
+                    </div>
+                    <div class="items-block">
+                        <div class="item-row">
+                            <span class="item-qty">1</span>
+                            <span class="item-label">Espresso</span>
+                        </div>
+                        <div class="item-row">
+                            <span class="item-qty">2</span>
+                            <span class="item-label">Cappuccino</span>
+                        </div>
+                        <div class="item-row">
+                            <span class="item-qty">3</span>
+                            <span class="item-label">Macchiato</span>
+                        </div>
+                        <div class="item-row">
+                            <span class="item-qty">1</span>
+                            <span class="item-label">Cortado</span>
+                        </div>
+                        <div class="item-row">
+                            <span class="item-qty">2</span>
+                            <span class="item-label">Latte</span>
+                        </div>
+                        <div>
+                            <button style="background: transparent; border: none; color: #121926; cursor: pointer; display: block; font-family: Inter, 'Segoe UI', sans-serif; font-size: 13px; font-weight: 500; margin-top: 8px; padding: 0; text-decoration: underline;" type="button">
+                                See more (2 more)
+                            </button>
+                        </div>
+                    </div>
+                    <div class="note">Rush order, please prioritize!</div>
+                    <div class="actions">
+                        <button class="action-btn" type="button">
+                            <span>Take</span>
+                            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+                                <circle cx="8" cy="5" r="2.5"></circle>
+                                <path d="M3.5 13c0-2.2 2-4 4.5-4s4.5 1.8 4.5 4"></path>
+                            </svg>
                         </button>
                     </div>
                 </article>
