@@ -1,6 +1,6 @@
 import { IInputs, IOutputs } from "./generated/ManifestTypes";
 
-export class CardOrderAgentPcfLast38 implements ComponentFramework.StandardControl<IInputs, IOutputs> {
+export class CardOrderAgentPcfLast42 implements ComponentFramework.StandardControl<IInputs, IOutputs> {
     private static readonly DEFAULT_COLUMN_CANDIDATES = {
         createdBy: ["Author", "createdby", "Created By", "Cree par", "Creer par"],
         createdOn: ["Created", "created", "createdon", "Cree", "Creer"],
@@ -107,7 +107,7 @@ export class CardOrderAgentPcfLast38 implements ComponentFramework.StandardContr
             modalMaxWidth: isCompact ? "100%" : "640px",
             overlayAlignItems: "center",
             overlayPadding: isCompact ? "0px" : "16px",
-            overlayPosition: isCompact ? "fixed" : "absolute",
+            overlayPosition: "fixed",
             sectionPadding: isCompact ? "12px" : "14px 16px",
             width: "100%"
         };
@@ -115,6 +115,22 @@ export class CardOrderAgentPcfLast38 implements ComponentFramework.StandardContr
 
     private attachModal(overlay: HTMLDivElement): void {
         this.root.appendChild(overlay);
+    }
+
+    private appendOpenModals(): void {
+        const modals = [
+            this.takeModal,
+            this.cancelOrderModal,
+            this.seeMoreModal,
+            this.filterModal,
+            this.cleanModal
+        ].filter((modal): modal is HTMLDivElement => Boolean(modal));
+
+        modals.forEach((modal) => {
+            if (modal.parentElement !== this.root) {
+                this.root.appendChild(modal);
+            }
+        });
     }
 
     /**
@@ -271,15 +287,15 @@ export class CardOrderAgentPcfLast38 implements ComponentFramework.StandardContr
             context.parameters.statusColumn.raw,
             context.parameters.quantityColumn.raw,
             context.parameters.createdOnColumn.raw,
-            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.orderNumber,
-            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.createdBy,
-            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.status,
-            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.quantity,
-            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.modifiedOn,
-            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.createdOn,
-            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.itemId,
-            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.note,
-            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.products
+            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.orderNumber,
+            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.createdBy,
+            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.status,
+            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.quantity,
+            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.modifiedOn,
+            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.createdOn,
+            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.itemId,
+            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.note,
+            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.products
         ]
             .map((value) => value?.trim() ?? "")
             .filter((value) => value.length > 0);
@@ -334,12 +350,14 @@ export class CardOrderAgentPcfLast38 implements ComponentFramework.StandardContr
                 orders.errorMessage || this.translate(context, "loadErrorMessage")
             ));
             this.root.appendChild(scroller);
+            this.appendOpenModals();
             return;
         }
 
         if (orders.loading) {
             scroller.appendChild(this.createStateBlock(this.translate(context, "loadingTitle"), this.translate(context, "loadingMessage")));
             this.root.appendChild(scroller);
+            this.appendOpenModals();
             return;
         }
 
@@ -354,6 +372,7 @@ export class CardOrderAgentPcfLast38 implements ComponentFramework.StandardContr
                 )
             );
             this.root.appendChild(scroller);
+            this.appendOpenModals();
             return;
         }
 
@@ -377,6 +396,7 @@ export class CardOrderAgentPcfLast38 implements ComponentFramework.StandardContr
         }
 
         this.root.appendChild(scroller);
+        this.appendOpenModals();
     }
 
     private createSearchBar(
@@ -521,7 +541,11 @@ export class CardOrderAgentPcfLast38 implements ComponentFramework.StandardContr
         }
 
         filterButton.addEventListener("click", () => {
-            this.openFilterModal(context, orders, this.getOrders(context, orders));
+            try {
+                this.openFilterModal(context, orders, this.getOrders(context, orders));
+            } catch {
+                this.openFilterModal(context, orders, []);
+            }
         });
 
         controlsRow.appendChild(searchContainer);
@@ -718,7 +742,7 @@ export class CardOrderAgentPcfLast38 implements ComponentFramework.StandardContr
 
         return records.filter((record) => {
             const hasNote = record.note.trim().length > 0;
-            const zoneMatch = normalizedZones.size === 0 || normalizedZones.has(this.normalize(record.zone));
+            const zoneMatch = normalizedZones.size === 0 || normalizedZones.has(this.normalize(record.zone ?? ""));
             const otherMatch = this.selectedOtherFilter.size === 0
                 || (this.selectedOtherFilter.has("withNotes") && hasNote)
                 || (this.selectedOtherFilter.has("withoutNotes") && !hasNote);
@@ -739,7 +763,7 @@ export class CardOrderAgentPcfLast38 implements ComponentFramework.StandardContr
                 record.status,
                 record.note,
                 record.quantity,
-                record.zone,
+                record.zone ?? "",
                 ...record.products.map((item) => `${item.quantity} ${item.label}`)
             ];
 
@@ -1493,7 +1517,7 @@ export class CardOrderAgentPcfLast38 implements ComponentFramework.StandardContr
             justifyContent: "center",
             left: "0",
             padding: modalLayout.overlayPadding,
-            position: "absolute",
+            position: modalLayout.overlayPosition,
             right: "0",
             top: "0",
             zIndex: "9999"
@@ -2064,7 +2088,7 @@ export class CardOrderAgentPcfLast38 implements ComponentFramework.StandardContr
         const zoneOptions = Array.from(
             new Set(
                 records
-                    .map((record) => record.zone.trim())
+                    .map((record) => (record.zone ?? "").trim())
                     .filter((zone) => zone.length > 0)
             )
         ).sort((left, right) => left.localeCompare(right));
@@ -2442,52 +2466,52 @@ export class CardOrderAgentPcfLast38 implements ComponentFramework.StandardContr
         const orderNumberColumn = this.resolveColumnName(
             orders,
             context.parameters.orderNumberColumn.raw,
-            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.orderNumber
+            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.orderNumber
         );
         const createdByColumn = this.resolveColumnName(
             orders,
             context.parameters.createdByColumn.raw,
-            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.createdBy
+            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.createdBy
         );
         const statusColumn = this.resolveColumnName(
             orders,
             context.parameters.statusColumn.raw,
-            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.status
+            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.status
         );
         const quantityColumn = this.resolveColumnName(
             orders,
             context.parameters.quantityColumn.raw,
-            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.quantity
+            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.quantity
         );
         const itemIdColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.itemId
+            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.itemId
         );
         const modifiedOnColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.modifiedOn
+            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.modifiedOn
         );
         const createdOnColumn = this.resolveColumnName(
             orders,
             context.parameters.createdOnColumn.raw,
-            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.createdOn
+            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.createdOn
         );
         const noteColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.note
+            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.note
         );
         const zoneColumn = this.resolveColumnName(
             orders,
             context.parameters.zoneColumn.raw,
-            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.zone
+            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.zone
         );
         const productsColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.products
+            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.products
         );
 
         return orders.sortedRecordIds
@@ -3685,30 +3709,30 @@ export class CardOrderAgentPcfLast38 implements ComponentFramework.StandardContr
         const normalized = this.toCanonicalStatus(status);
 
         if (normalized === "toPrepare") {
-            return CardOrderAgentPcfLast38.CARD_STATUSES.toPrepare;
+            return CardOrderAgentPcfLast42.CARD_STATUSES.toPrepare;
         }
 
         if (normalized === "inPrep") {
-            return CardOrderAgentPcfLast38.CARD_STATUSES.inPrep;
+            return CardOrderAgentPcfLast42.CARD_STATUSES.inPrep;
         }
 
         if (normalized === "served") {
-            return CardOrderAgentPcfLast38.CARD_STATUSES.served;
+            return CardOrderAgentPcfLast42.CARD_STATUSES.served;
         }
 
         if (normalized === "toClean") {
-            return CardOrderAgentPcfLast38.CARD_STATUSES.toClean;
+            return CardOrderAgentPcfLast42.CARD_STATUSES.toClean;
         }
 
         if (normalized === "cleaned") {
-            return CardOrderAgentPcfLast38.CARD_STATUSES.cleaned;
+            return CardOrderAgentPcfLast42.CARD_STATUSES.cleaned;
         }
 
         if (normalized === "cancelled") {
-            return CardOrderAgentPcfLast38.CARD_STATUSES.cancelled;
+            return CardOrderAgentPcfLast42.CARD_STATUSES.cancelled;
         }
 
-        return CardOrderAgentPcfLast38.CARD_STATUSES.unknown;
+        return CardOrderAgentPcfLast42.CARD_STATUSES.unknown;
     }
 
     private shouldHideItemCount(status: string): boolean {
@@ -3912,6 +3936,9 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
         tabAll: "Tout"
     }
 };
+
+
+
 
 
 
