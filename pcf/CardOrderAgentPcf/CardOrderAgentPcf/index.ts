@@ -1,6 +1,6 @@
 import { IInputs, IOutputs } from "./generated/ManifestTypes";
 
-export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardControl<IInputs, IOutputs> {
+export class CardOrderAgentPcfLast38 implements ComponentFramework.StandardControl<IInputs, IOutputs> {
     private static readonly DEFAULT_COLUMN_CANDIDATES = {
         createdBy: ["Author", "createdby", "Created By", "Cree par", "Creer par"],
         createdOn: ["Created", "created", "createdon", "Cree", "Creer"],
@@ -10,7 +10,8 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         orderNumber: ["Title", "titre", "name", "ordernumber"],
         products: ["Products", "products", "Items", "items", "Produits", "produits", "OrderItems", "orderItems", "JSONOrderSections", "jsonOrderSections", "JsonOrderSections"],
         quantity: ["Quantit_x00e9_e", "quantity"],
-        status: ["StatutCommande", "status", "statuscode"]
+        status: ["StatutCommande", "status", "statuscode"],
+        zone: ["Zone", "zone", "ZoneId", "zoneid", "Zone Lookup", "zone lookup", "ZoneLookup", "zoneLookup"]
     };
 
     private static readonly CARD_STATUSES = {
@@ -57,12 +58,63 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
     private requestedColumns = new Set<string>();
     private searchTerm = "";
     private selectedStatus = "all";
+    private selectedFilterStatuses = new Set<CanonicalStatus>();
+    private selectedFilterZones = new Set<string>();
+    private selectedOtherFilter = new Set<"withNotes" | "withoutNotes">();
     private takeModal?: HTMLDivElement;
     private cancelOrderModal?: HTMLDivElement;
     private seeMoreModal?: HTMLDivElement;
+    private filterModal?: HTMLDivElement;
 
     constructor() {
         // Empty
+    }
+
+    private getModalLayout(): {
+        bodyPadding: string;
+        footerDirection: "column" | "row";
+        footerPadding: string;
+        footerStretchActions: boolean;
+        headerDirection: "column" | "row";
+        headerPadding: string;
+        headerRightJustify: string;
+        headerRightWidth?: string;
+        isCompact: boolean;
+        maxHeight: string;
+        modalMaxWidth: string;
+        overlayAlignItems: string;
+        overlayPadding: string;
+        overlayPosition: "fixed" | "absolute";
+        sectionPadding: string;
+        width: string;
+    } {
+        const containerWidth = this.root?.clientWidth
+            || this.root?.parentElement?.clientWidth
+            || (typeof window !== "undefined" && typeof window.innerWidth === "number" ? window.innerWidth : 1024);
+        const isCompact = containerWidth <= 768;
+
+        return {
+            bodyPadding: isCompact ? "16px 16px 4px 16px" : "18px 24px 4px 24px",
+            footerDirection: "row",
+            footerPadding: isCompact ? "12px 16px 16px 16px" : "12px 24px 16px 24px",
+            footerStretchActions: false,
+            headerDirection: "row",
+            headerPadding: isCompact ? "12px 12px 10px 12px" : "15px 16px 12px 16px",
+            headerRightJustify: "flex-end",
+            headerRightWidth: undefined,
+            isCompact,
+            maxHeight: isCompact ? "calc(100% - 8px)" : "calc(100% - 32px)",
+            modalMaxWidth: isCompact ? "100%" : "640px",
+            overlayAlignItems: "center",
+            overlayPadding: isCompact ? "0px" : "16px",
+            overlayPosition: isCompact ? "fixed" : "absolute",
+            sectionPadding: isCompact ? "12px" : "14px 16px",
+            width: "100%"
+        };
+    }
+
+    private attachModal(overlay: HTMLDivElement): void {
+        this.root.appendChild(overlay);
     }
 
     /**
@@ -80,11 +132,27 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         container: HTMLDivElement
     ): void {
         this.notifyOutputChanged = notifyOutputChanged;
+
+        this.applyStyles(container, {
+            height: "100%",
+            overflowX: "hidden",
+            overflowY: "auto",
+            position: "relative",
+            width: "100%"
+        });
+
         this.root = document.createElement("div");
         this.applyStyles(this.root, {
             background: "#f5f7fb",
             boxSizing: "border-box",
+            display: "flex",
+            flexDirection: "column",
+            height: "auto",
+            minHeight: "100%",
+            overflowX: "hidden",
+            overflowY: "visible",
             padding: "12px",
+            position: "relative",
             width: "100%"
         });
 
@@ -151,6 +219,7 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         this.closeTakeModal();
         this.closeCancelOrderModal();
         this.closeSeeMoreModal();
+        this.closeFilterModal();
         if (this.cleanModal && this.cleanModal.parentElement) {
             this.cleanModal.parentElement.removeChild(this.cleanModal);
         }
@@ -202,15 +271,15 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             context.parameters.statusColumn.raw,
             context.parameters.quantityColumn.raw,
             context.parameters.createdOnColumn.raw,
-            ...CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.orderNumber,
-            ...CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.createdBy,
-            ...CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.status,
-            ...CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.quantity,
-            ...CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.modifiedOn,
-            ...CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.createdOn,
-            ...CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.itemId,
-            ...CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.note,
-            ...CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.products
+            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.orderNumber,
+            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.createdBy,
+            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.status,
+            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.quantity,
+            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.modifiedOn,
+            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.createdOn,
+            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.itemId,
+            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.note,
+            ...CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.products
         ]
             .map((value) => value?.trim() ?? "")
             .filter((value) => value.length > 0);
@@ -255,6 +324,7 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             flexDirection: "column",
             gap: "14px",
             overflowX: "hidden",
+            overflowY: "visible",
             paddingRight: "4px"
         });
 
@@ -313,22 +383,35 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         context: ComponentFramework.Context<IInputs>,
         orders: ComponentFramework.PropertyTypes.DataSet
     ): HTMLDivElement {
+        const language = this.getLanguage(context);
+        const isFr = language === "fr";
+        const activeFilterCount = this.getActiveFilterCount();
+        const hasActiveFilters = activeFilterCount > 0;
+        const isCompact = (this.root?.clientWidth ?? this.root?.parentElement?.clientWidth ?? 1024) <= 640;
+
+        const controlsRow = this.createElement("div", {
+            alignItems: "stretch",
+            display: "flex",
+            flexWrap: "nowrap",
+            gap: "12px",
+            minWidth: "0",
+            width: "100%"
+        });
+
         const searchContainer = this.createElement("div", {
             alignItems: "center",
-            alignSelf: "stretch",
             background: "#ffffff",
             border: "0.613636px solid #000000",
             borderRadius: "4.29545px",
             boxSizing: "border-box",
             display: "flex",
             flexDirection: "row",
-            flexGrow: "0",
-            flexShrink: "0",
+            flex: "1 1 auto",
             gap: "0px",
-            height: "38px",
-            order: "1",
+            height: "52px",
+            minWidth: "0",
             padding: "0px 8px",
-            width: "100%"
+            width: "auto"
         });
 
         // Add magnifying glass icon
@@ -388,22 +471,275 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         });
 
         searchContainer.appendChild(input);
-        return searchContainer;
+
+        const filterButton = this.createElement("button", {
+            alignItems: "center",
+            alignSelf: "stretch",
+            background: "#ffffff",
+            border: hasActiveFilters ? "1px solid #98a2b3" : "0.613636px solid #000000",
+            borderRadius: "5.52px",
+            cursor: "pointer",
+            display: "flex",
+            flex: "0 0 auto",
+            flexShrink: "0",
+            flexDirection: "row",
+            fontFamily: "Inter, Segoe UI, sans-serif",
+            fontSize: "14px",
+            fontWeight: "600",
+            gap: "8px",
+            height: "52px",
+            justifyContent: "center",
+            padding: isCompact ? "0px 8px" : "0px 12px",
+            whiteSpace: "nowrap",
+            width: hasActiveFilters ? (isCompact ? "122px" : "146px") : (isCompact ? "108px" : "131px")
+        }) as HTMLButtonElement;
+        filterButton.type = "button";
+
+        if (hasActiveFilters) {
+            filterButton.appendChild(this.createEditIcon());
+            filterButton.appendChild(this.createElement("span", undefined, "Filter"));
+
+            const countBadge = this.createElement("span", {
+                alignItems: "center",
+                background: "#d0d5dd",
+                borderRadius: "6px",
+                color: "#344054",
+                display: "inline-flex",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "13px",
+                fontWeight: "700",
+                height: "28px",
+                justifyContent: "center",
+                lineHeight: "1",
+                minWidth: "28px",
+                padding: "0 6px"
+            }, `${activeFilterCount}`);
+            filterButton.appendChild(countBadge);
+        } else {
+            filterButton.appendChild(this.createFilterIcon());
+            filterButton.appendChild(this.createElement("span", undefined, isFr ? "Filtrer" : "Filter"));
+        }
+
+        filterButton.addEventListener("click", () => {
+            this.openFilterModal(context, orders, this.getOrders(context, orders));
+        });
+
+        controlsRow.appendChild(searchContainer);
+        controlsRow.appendChild(filterButton);
+
+        if (hasActiveFilters) {
+            const clearFiltersButton = this.createElement("button", {
+                alignItems: "center",
+                alignSelf: "stretch",
+                background: "transparent",
+                border: "none",
+                borderRadius: "5.52px",
+                color: "#d92d20",
+                cursor: "pointer",
+                display: "flex",
+                flex: "0 0 auto",
+                flexShrink: "0",
+                flexDirection: "row",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "13px",
+                fontWeight: "600",
+                gap: "6px",
+                height: "52px",
+                justifyContent: "center",
+                padding: "0px 4px",
+                whiteSpace: "nowrap",
+                width: "32px"
+            }) as HTMLButtonElement;
+            clearFiltersButton.type = "button";
+            clearFiltersButton.appendChild(this.createDeleteIcon());
+            clearFiltersButton.addEventListener("click", () => {
+                this.clearAllFilters();
+                this.render(context, orders);
+            });
+            controlsRow.appendChild(clearFiltersButton);
+        }
+
+        const toolbar = this.createElement("div", {
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+            width: "100%"
+        });
+        toolbar.appendChild(controlsRow);
+
+        if (hasActiveFilters) {
+            toolbar.appendChild(this.createSelectedFiltersSummary(context, orders));
+        }
+
+        return toolbar;
+    }
+
+    private getActiveFilterCount(): number {
+        return this.selectedFilterStatuses.size + this.selectedFilterZones.size + this.selectedOtherFilter.size;
+    }
+
+    private clearAllFilters(): void {
+        this.selectedFilterStatuses.clear();
+        this.selectedFilterZones.clear();
+        this.selectedOtherFilter.clear();
+    }
+
+    private createSelectedFiltersSummary(
+        context: ComponentFramework.Context<IInputs>,
+        orders: ComponentFramework.PropertyTypes.DataSet
+    ): HTMLDivElement {
+        const language = this.getLanguage(context);
+        const isFr = language === "fr";
+
+        const container = this.createElement("div", {
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+            width: "100%"
+        });
+
+        const createChip = (label: string, onRemove: () => void): HTMLButtonElement => {
+            const chip = this.createElement("button", {
+                alignItems: "center",
+                background: "#e4e7ec",
+                border: "none",
+                borderRadius: "8px",
+                color: "#344054",
+                cursor: "pointer",
+                display: "inline-flex",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "10px",
+                fontWeight: "500",
+                gap: "8px",
+                height: "34px",
+                lineHeight: "18px",
+                maxWidth: "100%",
+                padding: "0 10px"
+            }) as HTMLButtonElement;
+            chip.type = "button";
+            chip.appendChild(this.createElement("span", {
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap"
+            }, label));
+            chip.appendChild(this.createChipCloseIcon());
+            chip.addEventListener("click", () => {
+                onRemove();
+                this.render(context, orders);
+            });
+            return chip;
+        };
+
+        const createRow = (title: string, chips: HTMLButtonElement[]): HTMLDivElement | undefined => {
+            if (chips.length === 0) {
+                return undefined;
+            }
+
+            const row = this.createElement("div", {
+                alignItems: "center",
+                display: "flex",
+                gap: "0px",
+                width: "100%"
+            });
+
+            row.appendChild(this.createElement("div", {
+                color: "#344054",
+                flex: "0 0 72px",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "13.8px",
+                fontWeight: "500",
+                lineHeight: "20px"
+            }, `${title} :`));
+
+            const chipsWrap = this.createElement("div", {
+                display: "flex",
+                flex: "1 1 auto",
+                flexWrap: "wrap",
+                gap: "8px",
+                minWidth: "0"
+            });
+            chips.forEach((chip) => chipsWrap.appendChild(chip));
+            row.appendChild(chipsWrap);
+            return row;
+        };
+
+        const zoneChips = Array.from(this.selectedFilterZones)
+            .sort((a, b) => a.localeCompare(b))
+            .map((zone) => createChip(zone, () => {
+                this.selectedFilterZones.delete(zone);
+            }));
+
+        const otherChips: HTMLButtonElement[] = [];
+        if (this.selectedOtherFilter.has("withoutNotes")) {
+            otherChips.push(createChip(isFr ? "Sans note" : "Without notes", () => {
+                this.selectedOtherFilter.delete("withoutNotes");
+            }));
+        }
+        if (this.selectedOtherFilter.has("withNotes")) {
+            otherChips.push(createChip(isFr ? "Avec notes" : "With notes", () => {
+                this.selectedOtherFilter.delete("withNotes");
+            }));
+        }
+
+        const statusOrder: Exclude<CanonicalStatus, "cancel" | "unknown">[] = [
+            "toPrepare",
+            "inPrep",
+            "served",
+            "toClean",
+            "cleaned",
+            "cancelled"
+        ];
+        const statusChips = statusOrder
+            .filter((status) => this.selectedFilterStatuses.has(status))
+            .map((status) => createChip(this.getStatusLabel(status, language), () => {
+                this.selectedFilterStatuses.delete(status);
+            }));
+
+        const zoneRow = createRow("Zones", zoneChips);
+        const otherRow = createRow("Other", otherChips);
+        const statusRow = createRow("Status", statusChips);
+
+        if (zoneRow) {
+            container.appendChild(zoneRow);
+        }
+        if (otherRow) {
+            container.appendChild(otherRow);
+        }
+        if (statusRow) {
+            container.appendChild(statusRow);
+        }
+
+        return container;
     }
 
     private filterRecords(records: OrderRecordViewModel[]): OrderRecordViewModel[] {
         const keyword = this.normalize(this.searchTerm.trim());
-        if (!keyword) {
-            return records;
-        }
+        const normalizedZones = new Set(Array.from(this.selectedFilterZones).map((zone) => this.normalize(zone)));
 
         return records.filter((record) => {
+            const hasNote = record.note.trim().length > 0;
+            const zoneMatch = normalizedZones.size === 0 || normalizedZones.has(this.normalize(record.zone));
+            const otherMatch = this.selectedOtherFilter.size === 0
+                || (this.selectedOtherFilter.has("withNotes") && hasNote)
+                || (this.selectedOtherFilter.has("withoutNotes") && !hasNote);
+            const statusMatch = this.selectedFilterStatuses.size === 0
+                || this.selectedFilterStatuses.has(this.toCanonicalStatus(record.status));
+
+            if (!zoneMatch || !otherMatch || !statusMatch) {
+                return false;
+            }
+
+            if (!keyword) {
+                return true;
+            }
+
             const fields = [
                 record.orderNumber,
                 record.createdBy,
                 record.status,
                 record.note,
                 record.quantity,
+                record.zone,
                 ...record.products.map((item) => `${item.quantity} ${item.label}`)
             ];
 
@@ -662,16 +998,17 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         nextStatus: string
     ): void {
         this.closeTakeModal();
+        const modalLayout = this.getModalLayout();
 
         const overlay = this.createElement("div", {
-            alignItems: "center",
+            alignItems: modalLayout.overlayAlignItems,
             background: "rgba(16, 24, 40, 0.45)",
             bottom: "0",
             display: "flex",
             justifyContent: "center",
             left: "0",
-            padding: "16px",
-            position: "fixed",
+            padding: modalLayout.overlayPadding,
+            position: modalLayout.overlayPosition,
             right: "0",
             top: "0",
             zIndex: "9999"
@@ -685,11 +1022,11 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             display: "flex",
             flexDirection: "column",
             gap: "10px",
-            maxHeight: "90vh",
-            maxWidth: "420px",
+            maxHeight: modalLayout.maxHeight,
+            maxWidth: modalLayout.modalMaxWidth,
             overflowY: "auto",
             position: "relative",
-            width: "100%"
+            width: modalLayout.width
         });
 
         const closeBtn = this.createElement("button", {
@@ -716,9 +1053,11 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         const header = this.createElement("div", {
             alignItems: "flex-start",
             display: "flex",
+            flexDirection: modalLayout.headerDirection,
             gap: "12px",
             justifyContent: "space-between",
-            padding: "15px 16px 12px 16px"
+            padding: modalLayout.headerPadding,
+            width: "100%"
         });
 
         const left = this.createElement("div", {
@@ -806,7 +1145,9 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             alignItems: "center",
             display: "flex",
             flex: "0 0 auto",
-            gap: "6px"
+            gap: "6px",
+            justifyContent: modalLayout.headerRightJustify,
+            width: modalLayout.headerRightWidth ?? "auto"
         });
         headerRight.appendChild(badge);
         headerRight.appendChild(closeBtn);
@@ -819,7 +1160,7 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             display: "flex",
             flexDirection: "column",
             gap: "12px",
-            padding: "14px 16px",
+            padding: modalLayout.sectionPadding,
             width: "100%"
         });
 
@@ -833,12 +1174,13 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         }
 
         const footer = this.createElement("div", {
-            alignItems: "center",
+            alignItems: modalLayout.footerStretchActions ? "stretch" : "center",
             borderTop: "1px solid #eaecf0",
             display: "flex",
+            flexDirection: modalLayout.footerDirection,
             gap: "14px",
             justifyContent: "center",
-            padding: "10px 16px 16px 16px"
+            padding: modalLayout.isCompact ? "10px 12px 12px 12px" : "10px 16px 16px 16px"
         });
 
         const cancelBtn = this.createElement("button", {
@@ -853,7 +1195,9 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             fontWeight: "500",
             gap: "8px",
             minHeight: "36px",
-            padding: "8px 10px"
+            padding: "8px 10px",
+            justifyContent: "center",
+            width: modalLayout.footerStretchActions ? "100%" : "auto"
         }) as HTMLButtonElement;
         cancelBtn.type = "button";
         const cancelContent = this.createElement("div", {
@@ -884,7 +1228,8 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             justifyContent: "center",
             minHeight: "36px",
             minWidth: "92px",
-            padding: "8px 10px"
+            padding: "8px 10px",
+            width: modalLayout.footerStretchActions ? "100%" : "auto"
         }) as HTMLButtonElement;
         takeBtn.type = "button";
 
@@ -919,7 +1264,7 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         modalCard.appendChild(middle);
         modalCard.appendChild(footer);
         overlay.appendChild(modalCard);
-        document.body.appendChild(overlay);
+        this.attachModal(overlay);
         this.takeModal = overlay;
     }
 
@@ -942,16 +1287,17 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         record: OrderRecordViewModel
     ): void {
         this.closeSeeMoreModal();
+        const modalLayout = this.getModalLayout();
 
         const overlay = this.createElement("div", {
-            alignItems: "center",
+            alignItems: modalLayout.overlayAlignItems,
             background: "rgba(16, 24, 40, 0.45)",
             bottom: "0",
             display: "flex",
             justifyContent: "center",
             left: "0",
-            padding: "16px",
-            position: "fixed",
+            padding: modalLayout.overlayPadding,
+            position: modalLayout.overlayPosition,
             right: "0",
             top: "0",
             zIndex: "9999"
@@ -965,11 +1311,11 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             display: "flex",
             flexDirection: "column",
             gap: "10px",
-            maxHeight: "90vh",
-            maxWidth: "420px",
+            maxHeight: modalLayout.maxHeight,
+            maxWidth: modalLayout.modalMaxWidth,
             overflowY: "auto",
             position: "relative",
-            width: "100%"
+            width: modalLayout.width
         });
 
         const closeBtn = this.createElement("button", {
@@ -996,9 +1342,11 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         const header = this.createElement("div", {
             alignItems: "flex-start",
             display: "flex",
+            flexDirection: modalLayout.headerDirection,
             gap: "12px",
             justifyContent: "space-between",
-            padding: "15px 16px 12px 16px"
+            padding: modalLayout.headerPadding,
+            width: "100%"
         });
 
         const left = this.createElement("div", {
@@ -1086,7 +1434,9 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             alignItems: "center",
             display: "flex",
             flex: "0 0 auto",
-            gap: "6px"
+            gap: "6px",
+            justifyContent: modalLayout.headerRightJustify,
+            width: modalLayout.headerRightWidth ?? "auto"
         });
         headerRight.appendChild(badge);
         headerRight.appendChild(closeBtn);
@@ -1099,7 +1449,7 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             display: "flex",
             flexDirection: "column",
             gap: "12px",
-            padding: "14px 16px",
+            padding: modalLayout.sectionPadding,
             width: "100%"
         });
 
@@ -1116,7 +1466,7 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         modalCard.appendChild(middle);
 
         overlay.appendChild(modalCard);
-        document.body.appendChild(overlay);
+        this.attachModal(overlay);
         this.seeMoreModal = overlay;
     }
 
@@ -1133,16 +1483,17 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         this.cleanModal = undefined;
 
         const isFr = this.getLanguage(context) === "fr";
+        const modalLayout = this.getModalLayout();
 
         const overlay = this.createElement("div", {
-            alignItems: "center",
+            alignItems: modalLayout.overlayAlignItems,
             background: "rgba(16, 24, 40, 0.45)",
             bottom: "0",
             display: "flex",
             justifyContent: "center",
             left: "0",
-            padding: "16px",
-            position: "fixed",
+            padding: modalLayout.overlayPadding,
+            position: "absolute",
             right: "0",
             top: "0",
             zIndex: "9999"
@@ -1155,20 +1506,22 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             boxShadow: "0 10px 24px rgba(16, 24, 40, 0.2)",
             display: "flex",
             flexDirection: "column",
-            maxHeight: "90vh",
-            maxWidth: "420px",
+            maxHeight: modalLayout.maxHeight,
+            maxWidth: modalLayout.modalMaxWidth,
             overflowY: "auto",
             position: "relative",
-            width: "100%"
+            width: modalLayout.width
         });
 
         // Header
         const header = this.createElement("div", {
             alignItems: "flex-start",
             display: "flex",
+            flexDirection: modalLayout.headerDirection,
             gap: "12px",
             justifyContent: "space-between",
-            padding: "15px 16px 12px 16px"
+            padding: modalLayout.headerPadding,
+            width: "100%"
         });
 
         const left = this.createElement("div", {
@@ -1271,7 +1624,9 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             alignItems: "center",
             display: "flex",
             flex: "0 0 auto",
-            gap: "6px"
+            gap: "6px",
+            justifyContent: modalLayout.headerRightJustify,
+            width: modalLayout.headerRightWidth ?? "auto"
         });
         headerRight.appendChild(badge);
         headerRight.appendChild(closeBtn);
@@ -1285,7 +1640,7 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             display: "flex",
             flexDirection: "column",
             gap: "12px",
-            padding: "14px 16px",
+            padding: modalLayout.sectionPadding,
             width: "100%"
         });
 
@@ -1300,12 +1655,13 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
 
         // Footer
         const footer = this.createElement("div", {
-            alignItems: "center",
+            alignItems: modalLayout.footerStretchActions ? "stretch" : "center",
             borderTop: "1px solid #eaecf0",
             display: "flex",
+            flexDirection: modalLayout.footerDirection,
             gap: "14px",
             justifyContent: "center",
-            padding: "10px 16px 16px 16px"
+            padding: modalLayout.isCompact ? "10px 12px 12px 12px" : "10px 16px 16px 16px"
         });
 
         const cancelCleanBtn = this.createElement("button", {
@@ -1320,7 +1676,9 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             fontWeight: "500",
             gap: "8px",
             minHeight: "36px",
-            padding: "8px 10px"
+            padding: "8px 10px",
+            justifyContent: "center",
+            width: modalLayout.footerStretchActions ? "100%" : "auto"
         }) as HTMLButtonElement;
         cancelCleanBtn.type = "button";
         const cancelCleanContent = this.createElement("div", { alignItems: "center", display: "flex", gap: "6px" });
@@ -1351,7 +1709,8 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             justifyContent: "center",
             minHeight: "36px",
             minWidth: "130px",
-            padding: "8px 14px"
+            padding: "8px 14px",
+            width: modalLayout.footerStretchActions ? "100%" : "auto"
         }) as HTMLButtonElement;
         markCleanBtn.type = "button";
         const markCleanContent = this.createElement("div", { alignItems: "center", display: "flex", gap: "6px" });
@@ -1378,7 +1737,7 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         modalCard.appendChild(middle);
         modalCard.appendChild(footer);
         overlay.appendChild(modalCard);
-        document.body.appendChild(overlay);
+        this.attachModal(overlay);
         this.cleanModal = overlay;
     }
 
@@ -1393,6 +1752,7 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
 
         const isFr = this.getLanguage(context) === "fr";
         const logoUrl = context.parameters.logoUrl?.raw ?? "";
+        const modalLayout = this.getModalLayout();
 
         const t = {
             title: isFr
@@ -1411,14 +1771,14 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         };
 
         const overlay = this.createElement("div", {
-            alignItems: "center",
+            alignItems: modalLayout.overlayAlignItems,
             background: "rgba(16, 24, 40, 0.45)",
             bottom: "0",
             display: "flex",
             justifyContent: "center",
             left: "0",
-            padding: "16px",
-            position: "fixed",
+            padding: modalLayout.overlayPadding,
+            position: modalLayout.overlayPosition,
             right: "0",
             top: "0",
             zIndex: "10000"
@@ -1430,10 +1790,11 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             boxSizing: "border-box",
             display: "flex",
             flexDirection: "column",
-            maxWidth: "324px",
+            maxHeight: modalLayout.maxHeight,
+            maxWidth: modalLayout.isCompact ? modalLayout.modalMaxWidth : "324px",
             overflow: "hidden",
             position: "relative",
-            width: "100%"
+            width: modalLayout.isCompact ? modalLayout.width : "100%"
         });
 
         // Close button
@@ -1466,7 +1827,8 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             display: "flex",
             flexDirection: "column",
             gap: "12px",
-            padding: "18px 24px 4px 24px",
+            overflowY: "auto",
+            padding: modalLayout.bodyPadding,
             width: "100%"
         });
 
@@ -1596,12 +1958,13 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
 
         // Footer
         const footer = this.createElement("div", {
-            alignItems: "center",
+            alignItems: modalLayout.footerStretchActions ? "stretch" : "center",
             borderTop: "1px solid #eaecf0",
             display: "flex",
+            flexDirection: modalLayout.footerDirection,
             gap: "12px",
             justifyContent: "space-between",
-            padding: "12px 24px 16px 24px"
+            padding: modalLayout.footerPadding
         });
 
         const backBtn = this.createElement("button", {
@@ -1617,7 +1980,9 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             fontWeight: "600",
             gap: "8px",
             minHeight: "38px",
-            padding: "8px 16px"
+            justifyContent: "center",
+            padding: "8px 16px",
+            width: modalLayout.footerStretchActions ? "100%" : "auto"
         }) as HTMLButtonElement;
         backBtn.type = "button";
         backBtn.appendChild(this.createBackIcon());
@@ -1644,7 +2009,9 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             fontWeight: "600",
             gap: "6px",
             minHeight: "38px",
-            padding: "8px 0"
+            justifyContent: "center",
+            padding: "8px 0",
+            width: modalLayout.footerStretchActions ? "100%" : "auto"
         }) as HTMLButtonElement;
         cancelOrderBtn.type = "button";
         cancelOrderBtn.appendChild(this.createCancelIcon());
@@ -1664,8 +2031,321 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         popup.appendChild(footer);
 
         overlay.appendChild(popup);
-        document.body.appendChild(overlay);
+        this.attachModal(overlay);
         this.cancelOrderModal = overlay;
+    }
+
+    private closeFilterModal(): void {
+        if (this.filterModal && this.filterModal.parentElement) {
+            this.filterModal.parentElement.removeChild(this.filterModal);
+        }
+        this.filterModal = undefined;
+    }
+
+    private openFilterModal(
+        context: ComponentFramework.Context<IInputs>,
+        orders: ComponentFramework.PropertyTypes.DataSet,
+        records: OrderRecordViewModel[]
+    ): void {
+        this.closeFilterModal();
+
+        const modalLayout = this.getModalLayout();
+        const language = this.getLanguage(context);
+        const isFr = language === "fr";
+        const statusOptions: { key: CanonicalStatus; label: string }[] = [
+            { key: "toPrepare", label: this.getStatusLabel("toPrepare", language) },
+            { key: "inPrep", label: this.getStatusLabel("inPrep", language) },
+            { key: "served", label: this.getStatusLabel("served", language) },
+            { key: "toClean", label: this.getStatusLabel("toClean", language) },
+            { key: "cleaned", label: this.getStatusLabel("cleaned", language) },
+            { key: "cancelled", label: this.getStatusLabel("cancelled", language) }
+        ];
+
+        const zoneOptions = Array.from(
+            new Set(
+                records
+                    .map((record) => record.zone.trim())
+                    .filter((zone) => zone.length > 0)
+            )
+        ).sort((left, right) => left.localeCompare(right));
+
+        const draftStatuses = new Set(this.selectedFilterStatuses);
+        const draftZones = new Set(this.selectedFilterZones);
+        const draftOther = new Set(this.selectedOtherFilter);
+
+        const overlay = this.createElement("div", {
+            alignItems: modalLayout.overlayAlignItems,
+            background: "rgba(16, 24, 40, 0.45)",
+            bottom: "0",
+            display: "flex",
+            justifyContent: "center",
+            left: "0",
+            padding: modalLayout.overlayPadding,
+            position: modalLayout.overlayPosition,
+            right: "0",
+            top: "0",
+            zIndex: "10001"
+        });
+
+        const popup = this.createElement("div", {
+            background: "#ffffff",
+            border: "1px solid #eaecf0",
+            borderRadius: "11px",
+            boxShadow: "0 10px 24px rgba(16, 24, 40, 0.2)",
+            display: "flex",
+            flexDirection: "column",
+            maxHeight: modalLayout.maxHeight,
+            maxWidth: modalLayout.modalMaxWidth,
+            overflow: "hidden",
+            position: "relative",
+            width: modalLayout.width
+        });
+
+        const header = this.createElement("div", {
+            alignItems: "center",
+            borderBottom: "1px solid #eaecf0",
+            display: "flex",
+            justifyContent: "space-between",
+            padding: "14px 16px"
+        });
+        header.appendChild(this.createElement("span", {
+            color: "#101828",
+            fontFamily: "Inter, Segoe UI, sans-serif",
+            fontSize: "14px",
+            fontWeight: "700",
+            lineHeight: "28px"
+        }, isFr ? "Filtrer les commandes" : "Filter Orders"));
+
+        const closeBtn = this.createElement("button", {
+            alignItems: "center",
+            background: "transparent",
+            border: "none",
+            color: "#344054",
+            cursor: "pointer",
+            display: "inline-flex",
+            fontFamily: "Inter, Segoe UI, sans-serif",
+            fontSize: "28px",
+            height: "28px",
+            justifyContent: "center",
+            lineHeight: "1",
+            padding: "0",
+            width: "28px"
+        }, "×") as HTMLButtonElement;
+        closeBtn.type = "button";
+        closeBtn.addEventListener("click", () => this.closeFilterModal());
+        header.appendChild(closeBtn);
+
+        const body = this.createElement("div", {
+            display: "flex",
+            flexDirection: "column",
+            gap: "18px",
+            overflowY: "auto",
+            padding: "14px 16px"
+        });
+
+        const applyBtn = this.createElement("button") as HTMLButtonElement;
+        applyBtn.type = "button";
+
+        const updateApplyState = (): void => {
+            const hasSelection = draftStatuses.size > 0 || draftZones.size > 0 || draftOther.size > 0;
+            applyBtn.disabled = !hasSelection;
+            this.applyStyles(applyBtn, {
+                alignItems: "center",
+                background: hasSelection ? "#121926" : "#d0d5dd",
+                border: "none",
+                borderRadius: "0px",
+                color: "#ffffff",
+                cursor: hasSelection ? "pointer" : "not-allowed",
+                display: "inline-flex",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "14px",
+                fontWeight: "500",
+                gap: "8px",
+                height: "36px",
+                justifyContent: "center",
+                minHeight: "36px",
+                minWidth: "140px",
+                padding: "10px 14px"
+            });
+        };
+
+        const createChip = (label: string, active: boolean, onClick: () => void): HTMLButtonElement => {
+            const chip = this.createElement("button", {
+                alignItems: "center",
+                background: active ? "#121926" : "#f2f4f7",
+                border: active ? "1px solid #121926" : "1px solid #eaecf0",
+                borderRadius: "6px",
+                color: active ? "#ffffff" : "#667085",
+                cursor: "pointer",
+                display: "inline-flex",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "12px",
+                fontWeight: active ? "700" : "500",
+                lineHeight: "18px",
+                padding: "6px 10px"
+            }, label) as HTMLButtonElement;
+            chip.type = "button";
+            chip.addEventListener("click", onClick);
+            return chip;
+        };
+
+        const createSection = (title: string, chips: HTMLButtonElement[]): HTMLDivElement => {
+            const section = this.createElement("div", {
+                borderBottom: "1px solid #eaecf0",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+                paddingBottom: "14px"
+            });
+            section.appendChild(this.createElement("div", {
+                color: "#101828",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "14px",
+                fontWeight: "700",
+                lineHeight: "22px"
+            }, title));
+
+            const chipsWrap = this.createElement("div", {
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "8px"
+            });
+            chips.forEach((chip) => chipsWrap.appendChild(chip));
+            section.appendChild(chipsWrap);
+            return section;
+        };
+
+        const zoneSection = this.createElement("div");
+        const otherSection = this.createElement("div");
+        const statusSection = this.createElement("div");
+
+        const renderSections = (): void => {
+            zoneSection.replaceChildren();
+            otherSection.replaceChildren();
+            statusSection.replaceChildren();
+
+            const zoneChips = zoneOptions.map((zone) => createChip(zone, draftZones.has(zone), () => {
+                if (draftZones.has(zone)) {
+                    draftZones.delete(zone);
+                } else {
+                    draftZones.add(zone);
+                }
+                renderSections();
+                updateApplyState();
+            }));
+
+            if (zoneChips.length > 0) {
+                zoneSection.appendChild(createSection("Zone", zoneChips));
+            }
+
+            const otherChips = [
+                createChip(isFr ? "Sans note" : "Without notes", draftOther.has("withoutNotes"), () => {
+                    if (draftOther.has("withoutNotes")) {
+                        draftOther.delete("withoutNotes");
+                    } else {
+                        draftOther.add("withoutNotes");
+                    }
+                    renderSections();
+                    updateApplyState();
+                }),
+                createChip(isFr ? "Avec notes" : "With notes", draftOther.has("withNotes"), () => {
+                    if (draftOther.has("withNotes")) {
+                        draftOther.delete("withNotes");
+                    } else {
+                        draftOther.add("withNotes");
+                    }
+                    renderSections();
+                    updateApplyState();
+                })
+            ];
+            otherSection.appendChild(createSection("Other", otherChips));
+
+            const statusChips = statusOptions.map((status) => createChip(status.label, draftStatuses.has(status.key), () => {
+                if (draftStatuses.has(status.key)) {
+                    draftStatuses.delete(status.key);
+                } else {
+                    draftStatuses.add(status.key);
+                }
+                renderSections();
+                updateApplyState();
+            }));
+            statusSection.appendChild(createSection("Status", statusChips));
+        };
+
+        renderSections();
+        body.appendChild(zoneSection);
+        body.appendChild(otherSection);
+        body.appendChild(statusSection);
+
+        const footer = this.createElement("div", {
+            alignItems: "center",
+            borderTop: "1px solid #eaecf0",
+            display: "flex",
+            justifyContent: "space-between",
+            padding: "12px"
+        });
+
+        const removeBtn = this.createElement("button", {
+            alignItems: "center",
+            background: "transparent",
+            border: "none",
+            color: "#d92d20",
+            cursor: "pointer",
+            display: "inline-flex",
+            fontFamily: "Inter, Segoe UI, sans-serif",
+            fontSize: "14px",
+            fontWeight: "500",
+            gap: "6px",
+            justifyContent: "center",
+            padding: "8px 0"
+        }) as HTMLButtonElement;
+        removeBtn.type = "button";
+        removeBtn.appendChild(this.createElement("span", undefined, isFr ? "Supprimer les filtres" : "Remove filters"));
+        removeBtn.appendChild(this.createDeleteIcon());
+        removeBtn.addEventListener("click", () => {
+            draftStatuses.clear();
+            draftZones.clear();
+            draftOther.clear();
+
+            this.selectedFilterStatuses = new Set(draftStatuses);
+            this.selectedFilterZones = new Set(draftZones);
+            this.selectedOtherFilter = new Set(draftOther);
+            this.render(context, orders);
+            
+            renderSections();
+            updateApplyState();
+        });
+
+        applyBtn.appendChild(this.createElement("span", undefined, isFr ? "Appliquer les filtres" : "Apply filters"));
+        applyBtn.appendChild(this.createActionIcon("serve"));
+        updateApplyState();
+        applyBtn.addEventListener("click", () => {
+            if (applyBtn.disabled) {
+                return;
+            }
+
+            this.selectedFilterStatuses = new Set(draftStatuses);
+            this.selectedFilterZones = new Set(draftZones);
+            this.selectedOtherFilter = new Set(draftOther);
+            this.closeFilterModal();
+            this.render(context, orders);
+        });
+
+        footer.appendChild(removeBtn);
+        footer.appendChild(applyBtn);
+
+        popup.appendChild(header);
+        popup.appendChild(body);
+        popup.appendChild(footer);
+        overlay.appendChild(popup);
+        overlay.addEventListener("click", (event) => {
+            if (event.target === overlay) {
+                this.closeFilterModal();
+            }
+        });
+
+        this.attachModal(overlay);
+        this.filterModal = overlay;
     }
 
     private closeCancelOrderModal(): void {
@@ -1762,47 +2442,52 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         const orderNumberColumn = this.resolveColumnName(
             orders,
             context.parameters.orderNumberColumn.raw,
-            CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.orderNumber
+            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.orderNumber
         );
         const createdByColumn = this.resolveColumnName(
             orders,
             context.parameters.createdByColumn.raw,
-            CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.createdBy
+            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.createdBy
         );
         const statusColumn = this.resolveColumnName(
             orders,
             context.parameters.statusColumn.raw,
-            CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.status
+            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.status
         );
         const quantityColumn = this.resolveColumnName(
             orders,
             context.parameters.quantityColumn.raw,
-            CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.quantity
+            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.quantity
         );
         const itemIdColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.itemId
+            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.itemId
         );
         const modifiedOnColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.modifiedOn
+            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.modifiedOn
         );
         const createdOnColumn = this.resolveColumnName(
             orders,
             context.parameters.createdOnColumn.raw,
-            CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.createdOn
+            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.createdOn
         );
         const noteColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.note
+            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.note
+        );
+        const zoneColumn = this.resolveColumnName(
+            orders,
+            context.parameters.zoneColumn.raw,
+            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.zone
         );
         const productsColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast28.DEFAULT_COLUMN_CANDIDATES.products
+            CardOrderAgentPcfLast38.DEFAULT_COLUMN_CANDIDATES.products
         );
 
         return orders.sortedRecordIds
@@ -1822,6 +2507,7 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
                     itemIdColumn,
                     modifiedOnColumn,
                     noteColumn,
+                    zoneColumn,
                     productsColumn,
                     context.userSettings.userName,
                     this.getLanguage(context),
@@ -1846,6 +2532,7 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         itemIdColumn?: string,
         modifiedOnColumn?: string,
         noteColumn?: string,
+        zoneColumn?: string,
         productsColumn?: string,
         currentUserName?: string,
         language?: LanguageCode,
@@ -1858,6 +2545,7 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         const createdByIdentity = this.getPersonIdentity(record, createdByColumn);
         const createdBy = createdByIdentity?.displayName || this.getDisplayValue(record, createdByColumn, "Unknown user");
         const note = this.getDisplayValue(record, noteColumn, "");
+        const zone = zoneColumn ? record.getFormattedValue(zoneColumn) : "";
         const status = this.getDisplayValue(record, statusColumn, "Unknown");
         const quantity = this.getDisplayValue(record, quantityColumn, "-");
         const productsRaw = productsColumn ? record.getValue(productsColumn) : undefined;
@@ -1882,6 +2570,7 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
             products,
             takeProducts,
             quantity,
+            zone,
             status
         };
     }
@@ -2249,6 +2938,148 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
         path.setAttribute("d", "M6 2H3.5A1.5 1.5 0 0 0 2 3.5V6M10 2h2.5A1.5 1.5 0 0 1 14 3.5V6M14 10v2.5A1.5 1.5 0 0 1 12.5 14H10M6 14H3.5A1.5 1.5 0 0 1 2 12.5V10");
         iconSvg.appendChild(path);
+        return iconSvg;
+    }
+
+    private createFilterIcon(): SVGSVGElement {
+        const iconSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        iconSvg.setAttribute("width", "18");
+        iconSvg.setAttribute("height", "18");
+        iconSvg.setAttribute("viewBox", "0 0 18 18");
+        iconSvg.setAttribute("fill", "none");
+        iconSvg.setAttribute("stroke", "#344054");
+        iconSvg.setAttribute("stroke-width", "1.7");
+        iconSvg.setAttribute("stroke-linecap", "round");
+        iconSvg.setAttribute("stroke-linejoin", "round");
+        iconSvg.setAttribute("aria-hidden", "true");
+
+        const line1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line1.setAttribute("x1", "3");
+        line1.setAttribute("y1", "5");
+        line1.setAttribute("x2", "15");
+        line1.setAttribute("y2", "5");
+        iconSvg.appendChild(line1);
+
+        const line2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line2.setAttribute("x1", "6");
+        line2.setAttribute("y1", "9");
+        line2.setAttribute("x2", "15");
+        line2.setAttribute("y2", "9");
+        iconSvg.appendChild(line2);
+
+        const line3 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line3.setAttribute("x1", "9");
+        line3.setAttribute("y1", "13");
+        line3.setAttribute("x2", "15");
+        line3.setAttribute("y2", "13");
+        iconSvg.appendChild(line3);
+
+        return iconSvg;
+    }
+
+    private createEditIcon(): SVGSVGElement {
+        const iconSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        iconSvg.setAttribute("width", "16");
+        iconSvg.setAttribute("height", "16");
+        iconSvg.setAttribute("viewBox", "0 0 16 16");
+        iconSvg.setAttribute("fill", "none");
+        iconSvg.setAttribute("stroke", "#344054");
+        iconSvg.setAttribute("stroke-width", "1.7");
+        iconSvg.setAttribute("stroke-linecap", "round");
+        iconSvg.setAttribute("stroke-linejoin", "round");
+        iconSvg.setAttribute("aria-hidden", "true");
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", "M11.333 2.667a1.414 1.414 0 0 1 2 2L6 12l-2.667.667L4 10l7.333-7.333z");
+        iconSvg.appendChild(path);
+
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", "9.5");
+        line.setAttribute("y1", "4.5");
+        line.setAttribute("x2", "11.5");
+        line.setAttribute("y2", "6.5");
+        iconSvg.appendChild(line);
+
+        return iconSvg;
+    }
+
+    private createDeleteIcon(): SVGSVGElement {
+        const iconSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        iconSvg.setAttribute("width", "18");
+        iconSvg.setAttribute("height", "18");
+        iconSvg.setAttribute("viewBox", "0 0 18 18");
+        iconSvg.setAttribute("fill", "none");
+        iconSvg.setAttribute("stroke", "#d92d20");
+        iconSvg.setAttribute("stroke-width", "1.7");
+        iconSvg.setAttribute("stroke-linecap", "round");
+        iconSvg.setAttribute("stroke-linejoin", "round");
+        iconSvg.setAttribute("aria-hidden", "true");
+
+        const top = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        top.setAttribute("d", "M3.5 5.5h11");
+        iconSvg.appendChild(top);
+
+        const lid = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        lid.setAttribute("d", "M6.5 5.5V4.5c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v1");
+        iconSvg.appendChild(lid);
+
+        const body = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        body.setAttribute("d", "M5.5 5.5l.6 8c.04.53.48.94 1.01.94h3.78c.53 0 .97-.41 1.01-.94l.6-8");
+        iconSvg.appendChild(body);
+
+        const line1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line1.setAttribute("x1", "7.5");
+        line1.setAttribute("y1", "7.5");
+        line1.setAttribute("x2", "7.5");
+        line1.setAttribute("y2", "12.2");
+        iconSvg.appendChild(line1);
+
+        const line2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line2.setAttribute("x1", "10.5");
+        line2.setAttribute("y1", "7.5");
+        line2.setAttribute("x2", "10.5");
+        line2.setAttribute("y2", "12.2");
+        iconSvg.appendChild(line2);
+
+        return iconSvg;
+    }
+
+    private createChipCloseIcon(): SVGSVGElement {
+        const iconSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        iconSvg.setAttribute("width", "16");
+        iconSvg.setAttribute("height", "16");
+        iconSvg.setAttribute("viewBox", "0 0 16 16");
+        iconSvg.setAttribute("fill", "none");
+        iconSvg.setAttribute("aria-hidden", "true");
+        iconSvg.style.flexShrink = "0";
+
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", "8");
+        circle.setAttribute("cy", "8");
+        circle.setAttribute("r", "8");
+        circle.setAttribute("fill", "#98a2b3");
+        iconSvg.appendChild(circle);
+
+        const line1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line1.setAttribute("x1", "5.3");
+        line1.setAttribute("y1", "5.3");
+        line1.setAttribute("x2", "10.7");
+        line1.setAttribute("y2", "10.7");
+        line1.setAttribute("stroke", "#ffffff");
+        line1.setAttribute("stroke-width", "1.8");
+        line1.setAttribute("stroke-linecap", "round");
+        iconSvg.appendChild(line1);
+
+        const line2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line2.setAttribute("x1", "10.7");
+        line2.setAttribute("y1", "5.3");
+        line2.setAttribute("x2", "5.3");
+        line2.setAttribute("y2", "10.7");
+        line2.setAttribute("stroke", "#ffffff");
+        line2.setAttribute("stroke-width", "1.8");
+        line2.setAttribute("stroke-linecap", "round");
+        iconSvg.appendChild(line2);
+
         return iconSvg;
     }
 
@@ -2854,30 +3685,30 @@ export class CardOrderAgentPcfLast28 implements ComponentFramework.StandardContr
         const normalized = this.toCanonicalStatus(status);
 
         if (normalized === "toPrepare") {
-            return CardOrderAgentPcfLast28.CARD_STATUSES.toPrepare;
+            return CardOrderAgentPcfLast38.CARD_STATUSES.toPrepare;
         }
 
         if (normalized === "inPrep") {
-            return CardOrderAgentPcfLast28.CARD_STATUSES.inPrep;
+            return CardOrderAgentPcfLast38.CARD_STATUSES.inPrep;
         }
 
         if (normalized === "served") {
-            return CardOrderAgentPcfLast28.CARD_STATUSES.served;
+            return CardOrderAgentPcfLast38.CARD_STATUSES.served;
         }
 
         if (normalized === "toClean") {
-            return CardOrderAgentPcfLast28.CARD_STATUSES.toClean;
+            return CardOrderAgentPcfLast38.CARD_STATUSES.toClean;
         }
 
         if (normalized === "cleaned") {
-            return CardOrderAgentPcfLast28.CARD_STATUSES.cleaned;
+            return CardOrderAgentPcfLast38.CARD_STATUSES.cleaned;
         }
 
         if (normalized === "cancelled") {
-            return CardOrderAgentPcfLast28.CARD_STATUSES.cancelled;
+            return CardOrderAgentPcfLast38.CARD_STATUSES.cancelled;
         }
 
-        return CardOrderAgentPcfLast28.CARD_STATUSES.unknown;
+        return CardOrderAgentPcfLast38.CARD_STATUSES.unknown;
     }
 
     private shouldHideItemCount(status: string): boolean {
@@ -3032,6 +3863,7 @@ interface OrderRecordViewModel {
     products: ProductLine[];
     takeProducts: ProductLine[];
     quantity: string;
+    zone: string;
     status: string;
 }
 
@@ -3080,6 +3912,7 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
         tabAll: "Tout"
     }
 };
+
 
 
 
