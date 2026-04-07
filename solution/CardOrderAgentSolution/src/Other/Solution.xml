@@ -8,7 +8,7 @@
       <LocalizedName description="CardOrderAgentSolution" languagecode="1033" />
     </LocalizedNames>
     <Descriptions />
-    <Version>1.0.49.0</Version>
+    <Version>1.0.50.0</Version>
     <!-- Solution Package Type: Unmanaged(0)/Managed(1)/Both(2)-->
     <Managed>0</Managed>
     <Publisher>
@@ -25,7 +25,7 @@
       <EMailAddress xsi:nil="true"></EMailAddress>
       <SupportingWebsiteUrl xsi:nil="true"></SupportingWebsiteUrl>
       <!-- Customization Prefix for the Cds Publisher-->
-      <CustomizationPrefix>cth</CustomizationPrefix>
+      <CustomizationPrefix>sa</CustomizationPrefix>
       <!-- Derived Option Value Prefix for the Customization Prefix of Cds Publisher -->
       <CustomizationOptionValuePrefix>87309</CustomizationOptionValuePrefix>
       <Addresses>
@@ -89,7 +89,7 @@
       </Addresses>
     </Publisher>
     <RootComponents>
-      <RootComponent type="66" schemaName="cth_Hermes.Controls.CardOrderAgentPcfLast42" />
+      <RootComponent type="66" schemaName="sa_Hermes.Controls.CardOrderAgentPcfLast43" />
     </RootComponents>
     <MissingDependencies />
   </SolutionManifest>

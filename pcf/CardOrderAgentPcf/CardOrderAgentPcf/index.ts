@@ -1,6 +1,6 @@
 import { IInputs, IOutputs } from "./generated/ManifestTypes";
 
-export class CardOrderAgentPcfLast42 implements ComponentFramework.StandardControl<IInputs, IOutputs> {
+export class CardOrderAgentPcfLast43 implements ComponentFramework.StandardControl<IInputs, IOutputs> {
     private static readonly DEFAULT_COLUMN_CANDIDATES = {
         createdBy: ["Author", "createdby", "Created By", "Cree par", "Creer par"],
         createdOn: ["Created", "created", "createdon", "Cree", "Creer"],
@@ -287,15 +287,15 @@ export class CardOrderAgentPcfLast42 implements ComponentFramework.StandardContr
             context.parameters.statusColumn.raw,
             context.parameters.quantityColumn.raw,
             context.parameters.createdOnColumn.raw,
-            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.orderNumber,
-            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.createdBy,
-            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.status,
-            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.quantity,
-            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.modifiedOn,
-            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.createdOn,
-            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.itemId,
-            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.note,
-            ...CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.products
+            ...CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.orderNumber,
+            ...CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.createdBy,
+            ...CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.status,
+            ...CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.quantity,
+            ...CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.modifiedOn,
+            ...CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.createdOn,
+            ...CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.itemId,
+            ...CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.note,
+            ...CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.products
         ]
             .map((value) => value?.trim() ?? "")
             .filter((value) => value.length > 0);
@@ -2466,52 +2466,52 @@ export class CardOrderAgentPcfLast42 implements ComponentFramework.StandardContr
         const orderNumberColumn = this.resolveColumnName(
             orders,
             context.parameters.orderNumberColumn.raw,
-            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.orderNumber
+            CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.orderNumber
         );
         const createdByColumn = this.resolveColumnName(
             orders,
             context.parameters.createdByColumn.raw,
-            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.createdBy
+            CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.createdBy
         );
         const statusColumn = this.resolveColumnName(
             orders,
             context.parameters.statusColumn.raw,
-            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.status
+            CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.status
         );
         const quantityColumn = this.resolveColumnName(
             orders,
             context.parameters.quantityColumn.raw,
-            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.quantity
+            CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.quantity
         );
         const itemIdColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.itemId
+            CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.itemId
         );
         const modifiedOnColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.modifiedOn
+            CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.modifiedOn
         );
         const createdOnColumn = this.resolveColumnName(
             orders,
             context.parameters.createdOnColumn.raw,
-            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.createdOn
+            CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.createdOn
         );
         const noteColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.note
+            CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.note
         );
         const zoneColumn = this.resolveColumnName(
             orders,
             context.parameters.zoneColumn.raw,
-            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.zone
+            CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.zone
         );
         const productsColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast42.DEFAULT_COLUMN_CANDIDATES.products
+            CardOrderAgentPcfLast43.DEFAULT_COLUMN_CANDIDATES.products
         );
 
         return orders.sortedRecordIds
@@ -3709,30 +3709,30 @@ export class CardOrderAgentPcfLast42 implements ComponentFramework.StandardContr
         const normalized = this.toCanonicalStatus(status);
 
         if (normalized === "toPrepare") {
-            return CardOrderAgentPcfLast42.CARD_STATUSES.toPrepare;
+            return CardOrderAgentPcfLast43.CARD_STATUSES.toPrepare;
         }
 
         if (normalized === "inPrep") {
-            return CardOrderAgentPcfLast42.CARD_STATUSES.inPrep;
+            return CardOrderAgentPcfLast43.CARD_STATUSES.inPrep;
         }
 
         if (normalized === "served") {
-            return CardOrderAgentPcfLast42.CARD_STATUSES.served;
+            return CardOrderAgentPcfLast43.CARD_STATUSES.served;
         }
 
         if (normalized === "toClean") {
-            return CardOrderAgentPcfLast42.CARD_STATUSES.toClean;
+            return CardOrderAgentPcfLast43.CARD_STATUSES.toClean;
         }
 
         if (normalized === "cleaned") {
-            return CardOrderAgentPcfLast42.CARD_STATUSES.cleaned;
+            return CardOrderAgentPcfLast43.CARD_STATUSES.cleaned;
         }
 
         if (normalized === "cancelled") {
-            return CardOrderAgentPcfLast42.CARD_STATUSES.cancelled;
+            return CardOrderAgentPcfLast43.CARD_STATUSES.cancelled;
         }
 
-        return CardOrderAgentPcfLast42.CARD_STATUSES.unknown;
+        return CardOrderAgentPcfLast43.CARD_STATUSES.unknown;
     }
 
     private shouldHideItemCount(status: string): boolean {

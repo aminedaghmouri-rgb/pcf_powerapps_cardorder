@@ -1,6 +1,6 @@
 {
   "name": "pcf-project",
-  "version": "1.0.28",
+  "version": "1.0.29",
   "description": "Project containing your PowerApps Component Framework (PCF) control.",
   "scripts": {
     "build": "pcf-scripts build",
@@ -11,7 +11,7 @@
     "lint:fix": "pcf-scripts lint fix",
     "package:solution": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/package-solution.ps1",
     "pp:auth:list": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/pac.ps1 auth list",
-    "pp:push": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/pac.ps1 pcf push --publisher-prefix cth",
+    "pp:push": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/pac.ps1 pcf push --publisher-prefix sa",
     "rebuild": "pcf-scripts rebuild",
     "start": "pcf-scripts start",
     "start:watch": "pcf-scripts start watch",

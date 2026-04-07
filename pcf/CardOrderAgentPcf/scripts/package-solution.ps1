@@ -15,7 +15,7 @@ $controlConstructor = $controlManifestXml.manifest.control.constructor
 if ([string]::IsNullOrWhiteSpace($controlNamespace) -or [string]::IsNullOrWhiteSpace($controlConstructor)) {
     throw "Unable to resolve control namespace/constructor from ControlManifest.xml"
 }
-$controlZipFolder = "cth_{0}.{1}" -f $controlNamespace, $controlConstructor
+$controlZipFolder = "sa_{0}.{1}" -f $controlNamespace, $controlConstructor
 
 $zipPaths = @(
     (Join-Path $repoRoot "solution\CardOrderAgentSolution\bin\Debug\CardOrderAgentSolution.zip"),
@@ -73,7 +73,7 @@ foreach ($zipPath in $zipPaths) {
     $zip = [System.IO.Compression.ZipFile]::Open($zipPath, "Update")
     try {
         # Keep only the current control payload in the zip to avoid stale Last/LastX entries.
-        Remove-ZipEntriesByPrefix -Zip $zip -EntryPrefix "Controls/cth_Hermes.Controls.CardOrderAgentPcf"
+        Remove-ZipEntriesByPrefix -Zip $zip -EntryPrefix "Controls/sa_Hermes.Controls.CardOrderAgentPcf"
 
         Update-ZipEntry -Zip $zip -EntryPath "Controls/$controlZipFolder/bundle.js" -SourceFile $bundlePath
         Update-ZipEntry -Zip $zip -EntryPath "Controls/$controlZipFolder/ControlManifest.xml" -SourceFile $controlManifestPath
