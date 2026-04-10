@@ -11,8 +11,8 @@
   <optionsets />
   <CustomControls>
     <CustomControl>
-      <Name>sa_Hermes.Controls.CardOrderAgentPcfLast50</Name>
-      <FileName>/Controls/sa_Hermes.Controls.CardOrderAgentPcfLast50/ControlManifest.xml</FileName>
+      <Name>sa_Hermes.Controls.CardOrderAgentPcfLast51</Name>
+      <FileName>/Controls/sa_Hermes.Controls.CardOrderAgentPcfLast51/ControlManifest.xml</FileName>
     </CustomControl>
   </CustomControls>
   <SolutionPluginAssemblies />
