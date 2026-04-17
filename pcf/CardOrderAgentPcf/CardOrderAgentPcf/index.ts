@@ -1,6 +1,6 @@
 import { IInputs, IOutputs } from "./generated/ManifestTypes";
 
-export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardControl<IInputs, IOutputs> {
+export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardControl<IInputs, IOutputs> {
     private static readonly DEFAULT_COLUMN_CANDIDATES = {
         createdBy: ["Author", "createdby", "Created By", "Cree par", "Creer par"],
         createdOn: ["Created", "created", "createdon", "Cree", "Creer"],
@@ -63,6 +63,8 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
     private selectedFilterStatuses = new Set<CanonicalStatus>();
     private selectedFilterZones = new Set<string>();
     private selectedOtherFilter = new Set<"withNotes" | "withoutNotes">();
+    private filterDateFrom?: Date;
+    private filterDateTo?: Date;
     private takeModal?: HTMLDivElement;
     private cancelOrderModal?: HTMLDivElement;
     private seeMoreModal?: HTMLDivElement;
@@ -175,6 +177,11 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
         });
 
         container.appendChild(this.root);
+
+        const orders = context.parameters.orders;
+        if (orders?.paging) {
+            orders.paging.setPageSize(5000);
+        }
     }
 
 
@@ -186,6 +193,10 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
         const orders = context.parameters.orders;
         if (this.ensureRequestedColumns(context, orders)) {
             return;
+        }
+
+        if (!orders.loading && orders.paging.hasNextPage) {
+            orders.paging.loadNextPage();
         }
 
         this.render(context, orders);
@@ -290,16 +301,16 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
             context.parameters.quantityColumn.raw,
             context.parameters.createdOnColumn.raw,
             context.parameters.createdByPhotoColumn.raw,
-            ...CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.orderNumber,
-            ...CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.createdBy,
-            ...CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.status,
-            ...CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.quantity,
-            ...CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.modifiedOn,
-            ...CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.createdOn,
-            ...CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.itemId,
-            ...CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.note,
-            ...CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.products,
-            ...CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.userPhoto
+            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.orderNumber,
+            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.createdBy,
+            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.status,
+            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.quantity,
+            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.modifiedOn,
+            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.createdOn,
+            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.itemId,
+            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.note,
+            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.products,
+            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.userPhoto
         ]
             .map((value) => value?.trim() ?? "")
             .filter((value) => value.length > 0);
@@ -603,13 +614,15 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
     }
 
     private getActiveFilterCount(): number {
-        return this.selectedFilterStatuses.size + this.selectedFilterZones.size + this.selectedOtherFilter.size;
+        return this.selectedFilterStatuses.size + this.selectedFilterZones.size + this.selectedOtherFilter.size + (this.filterDateFrom || this.filterDateTo ? 1 : 0);
     }
 
     private clearAllFilters(): void {
         this.selectedFilterStatuses.clear();
         this.selectedFilterZones.clear();
         this.selectedOtherFilter.clear();
+        this.filterDateFrom = undefined;
+        this.filterDateTo = undefined;
     }
 
     private createSelectedFiltersSummary(
@@ -737,12 +750,29 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
             container.appendChild(statusRow);
         }
 
+        if (this.filterDateFrom || this.filterDateTo) {
+            const fromStr = this.filterDateFrom
+                ? this.filterDateFrom.toLocaleDateString([], { day: "2-digit", month: "2-digit", year: "numeric" })
+                : "\u2026";
+            const toStr = this.filterDateTo
+                ? this.filterDateTo.toLocaleDateString([], { day: "2-digit", month: "2-digit", year: "numeric" })
+                : "\u2026";
+            const dateChip = createChip(`${fromStr} \u2192 ${toStr}`, () => {
+                this.filterDateFrom = undefined;
+                this.filterDateTo = undefined;
+            });
+            const dateRow = createRow(isFr ? "Date" : "Date", [dateChip]);
+            if (dateRow) container.appendChild(dateRow);
+        }
+
         return container;
     }
 
     private filterRecords(records: OrderRecordViewModel[]): OrderRecordViewModel[] {
         const keyword = this.normalize(this.searchTerm.trim());
         const normalizedZones = new Set(Array.from(this.selectedFilterZones).map((zone) => this.normalize(zone)));
+        const dateFrom = this.filterDateFrom;
+        const dateTo = this.filterDateTo;
 
         return records.filter((record) => {
             const hasNote = record.note.trim().length > 0;
@@ -752,8 +782,16 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
                 || (this.selectedOtherFilter.has("withoutNotes") && !hasNote);
             const statusMatch = this.selectedFilterStatuses.size === 0
                 || this.selectedFilterStatuses.has(this.toCanonicalStatus(record.status));
+            const dateMatch = (!dateFrom && !dateTo) || (() => {
+                const d = record.sourceListDate;
+                if (!d) return false;
+                const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                if (dateFrom && dayStart < dateFrom) return false;
+                if (dateTo && dayStart > dateTo) return false;
+                return true;
+            })();
 
-            if (!zoneMatch || !otherMatch || !statusMatch) {
+            if (!zoneMatch || !otherMatch || !statusMatch || !dateMatch) {
                 return false;
             }
 
@@ -822,6 +860,7 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
             width: "100%"
         });
         card.dataset.canonicalStatus = this.toCanonicalStatus(record.status);
+        const showActions = context.parameters.showActions?.raw !== false;
 
         const header = this.createElement("div", {
             alignItems: "flex-start",
@@ -885,9 +924,19 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
             }, this.formatQuantity(record.quantity, this.getLanguage(context))));
             meta.appendChild(this.createElement("span", undefined, "•"));
         }
-        meta.appendChild(this.createElement("span", {
-            fontWeight: "400"
-        }, record.createdTime));
+        if (!showActions && record.sourceListDate) {
+            const d = record.sourceListDate;
+            const day = String(d.getDate()).padStart(2, "0");
+            const month = String(d.getMonth() + 1).padStart(2, "0");
+            const year = d.getFullYear();
+            meta.appendChild(this.createElement("span", {
+                fontWeight: "400"
+            }, `${day}/${month}/${year}`));
+        } else {
+            meta.appendChild(this.createElement("span", {
+                fontWeight: "400"
+            }, record.createdTime));
+        }
         details.appendChild(meta);
 
         left.appendChild(avatar);
@@ -1014,7 +1063,7 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
 
         card.appendChild(header);
         card.appendChild(middle);
-        if (record.actionLabel && record.actionName && record.nextStatus) {
+        if (showActions && record.actionLabel && record.actionName && record.nextStatus) {
             card.appendChild(footer);
         }
 
@@ -2133,6 +2182,11 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
         const draftStatuses = new Set(this.selectedFilterStatuses);
         const draftZones = new Set(this.selectedFilterZones);
         const draftOther = new Set(this.selectedOtherFilter);
+        const showActions = context.parameters.showActions?.raw !== false;
+        let draftDateFrom: Date | undefined = this.filterDateFrom;
+        let draftDateTo: Date | undefined = this.filterDateTo;
+        let fromInputRef: HTMLInputElement | undefined;
+        let toInputRef: HTMLInputElement | undefined;
 
         const overlay = this.createElement("div", {
             alignItems: modalLayout.overlayAlignItems,
@@ -2208,7 +2262,7 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
         applyBtn.type = "button";
 
         const updateApplyState = (): void => {
-            const hasSelection = draftStatuses.size > 0 || draftZones.size > 0 || draftOther.size > 0;
+            const hasSelection = draftStatuses.size > 0 || draftZones.size > 0 || draftOther.size > 0 || !!draftDateFrom || !!draftDateTo;
             applyBtn.disabled = !hasSelection;
             this.applyStyles(applyBtn, {
                 alignItems: "center",
@@ -2338,6 +2392,94 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
         body.appendChild(otherSection);
         body.appendChild(statusSection);
 
+        if (!showActions) {
+            const toISODate = (d?: Date): string => {
+                if (!d) return "";
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+            };
+            const dateSection = this.createElement("div", {
+                borderBottom: "1px solid #eaecf0",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+                paddingBottom: "14px"
+            });
+            dateSection.appendChild(this.createElement("div", {
+                color: "#101828",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "14px",
+                fontWeight: "700",
+                lineHeight: "22px"
+            }, isFr ? "Date" : "Date"));
+            const dateRow = this.createElement("div", {
+                alignItems: "flex-end",
+                display: "flex",
+                gap: "8px"
+            });
+            const fromWrapper = this.createElement("div", {
+                display: "flex",
+                flexDirection: "column",
+                flex: "1",
+                gap: "4px"
+            });
+            fromWrapper.appendChild(this.createElement("span", {
+                color: "#344054",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "11px",
+                fontWeight: "500"
+            }, isFr ? "Du" : "From"));
+            const fromInput = this.createElement("input", {
+                border: "1px solid #d0d5dd",
+                borderRadius: "6px",
+                boxSizing: "border-box",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "12px",
+                padding: "6px 8px",
+                width: "100%"
+            }) as HTMLInputElement;
+            fromInput.type = "date";
+            fromInput.value = toISODate(draftDateFrom);
+            fromInput.addEventListener("change", () => {
+                draftDateFrom = fromInput.value ? new Date(fromInput.value + "T00:00:00") : undefined;
+                updateApplyState();
+            });
+            fromInputRef = fromInput;
+            fromWrapper.appendChild(fromInput);
+            const toWrapper = this.createElement("div", {
+                display: "flex",
+                flexDirection: "column",
+                flex: "1",
+                gap: "4px"
+            });
+            toWrapper.appendChild(this.createElement("span", {
+                color: "#344054",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "11px",
+                fontWeight: "500"
+            }, isFr ? "Au" : "To"));
+            const toInput = this.createElement("input", {
+                border: "1px solid #d0d5dd",
+                borderRadius: "6px",
+                boxSizing: "border-box",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "12px",
+                padding: "6px 8px",
+                width: "100%"
+            }) as HTMLInputElement;
+            toInput.type = "date";
+            toInput.value = toISODate(draftDateTo);
+            toInput.addEventListener("change", () => {
+                draftDateTo = toInput.value ? new Date(toInput.value + "T00:00:00") : undefined;
+                updateApplyState();
+            });
+            toInputRef = toInput;
+            toWrapper.appendChild(toInput);
+            dateRow.appendChild(fromWrapper);
+            dateRow.appendChild(toWrapper);
+            dateSection.appendChild(dateRow);
+            body.appendChild(dateSection);
+        }
+
         const footer = this.createElement("div", {
             alignItems: "center",
             borderTop: "1px solid #eaecf0",
@@ -2367,6 +2509,12 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
             draftStatuses.clear();
             draftZones.clear();
             draftOther.clear();
+            draftDateFrom = undefined;
+            draftDateTo = undefined;
+            this.filterDateFrom = undefined;
+            this.filterDateTo = undefined;
+            if (fromInputRef) fromInputRef.value = "";
+            if (toInputRef) toInputRef.value = "";
 
             this.selectedFilterStatuses = new Set(draftStatuses);
             this.selectedFilterZones = new Set(draftZones);
@@ -2388,6 +2536,8 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
             this.selectedFilterStatuses = new Set(draftStatuses);
             this.selectedFilterZones = new Set(draftZones);
             this.selectedOtherFilter = new Set(draftOther);
+            this.filterDateFrom = draftDateFrom;
+            this.filterDateTo = draftDateTo;
             this.closeFilterModal();
             this.render(context, orders);
         });
@@ -2524,69 +2674,82 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
         const orderNumberColumn = this.resolveColumnName(
             orders,
             context.parameters.orderNumberColumn.raw,
-            CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.orderNumber
+            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.orderNumber
         );
         const createdByColumn = this.resolveColumnName(
             orders,
             context.parameters.createdByColumn.raw,
-            CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.createdBy
+            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.createdBy
         );
         const statusColumn = this.resolveColumnName(
             orders,
             context.parameters.statusColumn.raw,
-            CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.status
+            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.status
         );
         const quantityColumn = this.resolveColumnName(
             orders,
             context.parameters.quantityColumn.raw,
-            CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.quantity
+            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.quantity
         );
         const itemIdColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.itemId
+            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.itemId
         );
         const modifiedOnColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.modifiedOn
+            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.modifiedOn
         );
         const createdOnColumn = this.resolveColumnName(
             orders,
             context.parameters.createdOnColumn.raw,
-            CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.createdOn
+            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.createdOn
         );
         const noteColumn = this.resolveColumnName(
             orders,
-            null,
-            CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.note
+            context.parameters.noteColumn?.raw ?? null,
+            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.note
         );
         const zoneColumn = this.resolveColumnName(
             orders,
             context.parameters.zoneColumn.raw,
-            CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.zone
+            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.zone
         );
         const subZoneColumn = this.resolveColumnName(
             orders,
             context.parameters.subZoneColumn.raw,
-            CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.subZone
+            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.subZone
         );
         const productsColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.products
+            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.products
         );
         const createdByPhotoColumn = this.resolveColumnName(
             orders,
             context.parameters.createdByPhotoColumn.raw,
-            CardOrderAgentPcfLast60.DEFAULT_COLUMN_CANDIDATES.userPhoto
+            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.userPhoto
         );
+
+        const sourceListColumnName = (context.parameters.sourceListColumn?.raw ?? "Created_SourceList").trim();
+        const sourceListColumnExists = sourceListColumnName
+            ? orders.columns.some((c) => c.name === sourceListColumnName || c.alias === sourceListColumnName)
+            : false;
 
         return orders.sortedRecordIds
             .map((datasetRecordId) => {
                 const record = orders.records[datasetRecordId];
                 if (!record) {
                     return undefined;
+                }
+
+                if (sourceListColumnExists) {
+                    const sourceVal = record.getFormattedValue(sourceListColumnName)
+                        ?? String(record.getValue(sourceListColumnName) ?? "");
+                    if (!sourceVal || sourceVal.trim() === "") {
+                        return undefined;
+                    }
                 }
 
                 return this.toOrderViewModel(
@@ -2605,7 +2768,8 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
                     context.parameters.currentUserEmail?.raw ?? context.userSettings.userName,
                     this.getLanguage(context),
                     datasetRecordId,
-                    createdByPhotoColumn
+                    createdByPhotoColumn,
+                    sourceListColumnName || undefined
                 );
             })
             .filter((record): record is OrderRecordViewModel => Boolean(record))
@@ -2632,10 +2796,12 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
         currentUserName?: string,
         language?: LanguageCode,
         datasetRecordId?: string,
-        createdByPhotoColumn?: string
+        createdByPhotoColumn?: string,
+        sourceListColumn?: string
     ): OrderRecordViewModel | undefined {
         const createdOn = createdOnColumn ? this.toDate(record.getValue(createdOnColumn), record.getFormattedValue(createdOnColumn)) : undefined;
         const modifiedOn = modifiedOnColumn ? this.toDate(record.getValue(modifiedOnColumn), record.getFormattedValue(modifiedOnColumn)) : undefined;
+        const sourceListDate = sourceListColumn ? this.toDate(record.getValue(sourceListColumn), record.getFormattedValue(sourceListColumn)) : undefined;
 
         const orderNumber = this.getDisplayValue(record, orderNumberColumn, "Order without number");
         const createdByIdentity = this.getPersonIdentity(record, createdByColumn);
@@ -2661,6 +2827,7 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
             createdByPhotoUrl,
             createdOn,
             createdTime: createdOn ? this.formatTime(createdOn) : "-",
+            sourceListDate,
             datasetRecordId: datasetRecordId ?? record.getRecordId(),
             id: itemId,
             modifiedOn,
@@ -3800,30 +3967,30 @@ export class CardOrderAgentPcfLast60 implements ComponentFramework.StandardContr
         const normalized = this.toCanonicalStatus(status);
 
         if (normalized === "toPrepare") {
-            return CardOrderAgentPcfLast60.CARD_STATUSES.toPrepare;
+            return CardOrderAgentPcfLast65.CARD_STATUSES.toPrepare;
         }
 
         if (normalized === "inPrep") {
-            return CardOrderAgentPcfLast60.CARD_STATUSES.inPrep;
+            return CardOrderAgentPcfLast65.CARD_STATUSES.inPrep;
         }
 
         if (normalized === "served") {
-            return CardOrderAgentPcfLast60.CARD_STATUSES.served;
+            return CardOrderAgentPcfLast65.CARD_STATUSES.served;
         }
 
         if (normalized === "toClean") {
-            return CardOrderAgentPcfLast60.CARD_STATUSES.toClean;
+            return CardOrderAgentPcfLast65.CARD_STATUSES.toClean;
         }
 
         if (normalized === "cleaned") {
-            return CardOrderAgentPcfLast60.CARD_STATUSES.cleaned;
+            return CardOrderAgentPcfLast65.CARD_STATUSES.cleaned;
         }
 
         if (normalized === "cancelled") {
-            return CardOrderAgentPcfLast60.CARD_STATUSES.cancelled;
+            return CardOrderAgentPcfLast65.CARD_STATUSES.cancelled;
         }
 
-        return CardOrderAgentPcfLast60.CARD_STATUSES.unknown;
+        return CardOrderAgentPcfLast65.CARD_STATUSES.unknown;
     }
 
     private shouldHideItemCount(status: string): boolean {
@@ -3971,6 +4138,7 @@ interface OrderRecordViewModel {
     createdByPhotoUrl?: string;
     createdOn?: Date;
     createdTime: string;
+    sourceListDate?: Date;
     datasetRecordId: string;
     id: string;
     modifiedOn?: Date;
