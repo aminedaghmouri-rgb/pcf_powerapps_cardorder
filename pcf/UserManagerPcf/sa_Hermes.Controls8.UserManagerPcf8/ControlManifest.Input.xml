@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<manifest>
+  <control namespace="Hermes.Controls8" constructor="UserManagerPcf15" version="3.2.0" display-name-key="UserManagerPcf15" description-key="UserManagerPcf15 description" control-type="standard" >
+    <property name="userAccountColumn" display-name-key="UserAccountColumn_Display_Key" description-key="UserAccountColumn_Desc_Key" of-type="SingleLine.Text" usage="input" required="false" default-value="UserAccount" />
+    <property name="typeUserColumn" display-name-key="TypeUserColumn_Display_Key" description-key="TypeUserColumn_Desc_Key" of-type="SingleLine.Text" usage="input" required="false" default-value="TypeUser" />
+    <property name="titleUserColumn" display-name-key="TitleUserColumn_Display_Key" description-key="TitleUserColumn_Desc_Key" of-type="SingleLine.Text" usage="input" required="false" default-value="TitleUser" />
+    <property name="roleColumn" display-name-key="RoleColumn_Display_Key" description-key="RoleColumn_Desc_Key" of-type="SingleLine.Text" usage="input" required="false" default-value="Role" />
+    <property name="lieuxColumn" display-name-key="LieuxColumn_Display_Key" description-key="LieuxColumn_Desc_Key" of-type="SingleLine.Text" usage="input" required="false" default-value="Lieux" />
+    <property name="lieuxTitleColumn" display-name-key="LieuxTitleColumn_Display_Key" description-key="LieuxTitleColumn_Desc_Key" of-type="SingleLine.Text" usage="input" required="false" default-value="Titre" />
+    <property name="createdOnColumn" display-name-key="CreatedOnColumn_Display_Key" description-key="CreatedOnColumn_Desc_Key" of-type="SingleLine.Text" usage="input" required="false" default-value="Created" />
+    <property name="usersJson" display-name-key="UsersJson_Display_Key" description-key="UsersJson_Desc_Key" of-type="SingleLine.Text" usage="input" required="false" default-value="" />
+    <property name="typeUserChoices" display-name-key="TypeUserChoices_Display_Key" description-key="TypeUserChoices_Desc_Key" of-type="SingleLine.Text" usage="input" required="false" default-value="" />
+    <property name="titleUserChoices" display-name-key="TitleUserChoices_Display_Key" description-key="TitleUserChoices_Desc_Key" of-type="SingleLine.Text" usage="input" required="false" default-value="" />
+    <property name="roleChoices" display-name-key="RoleChoices_Display_Key" description-key="RoleChoices_Desc_Key" of-type="SingleLine.Text" usage="input" required="false" default-value="" />
+    <property name="refreshSignal" display-name-key="RefreshSignal_Display_Key" description-key="RefreshSignal_Desc_Key" of-type="SingleLine.Text" usage="input" required="false" default-value="" />
+    <property name="requestedAction" display-name-key="RequestedAction_Display_Key" description-key="RequestedAction_Desc_Key" of-type="SingleLine.Text" usage="output" required="false" />
+    <property name="selectedIds" display-name-key="SelectedIds_Display_Key" description-key="SelectedIds_Desc_Key" of-type="SingleLine.Text" usage="output" required="false" />
+    <property name="formData" display-name-key="FormData_Display_Key" description-key="FormData_Desc_Key" of-type="SingleLine.Text" usage="output" required="false" />
+    <property name="eventToken" display-name-key="EventToken_Display_Key" description-key="EventToken_Desc_Key" of-type="SingleLine.Text" usage="output" required="false" />
+    <property name="saveSignal" display-name-key="SaveSignal_Display_Key" description-key="SaveSignal_Desc_Key" of-type="SingleLine.Text" usage="output" required="false" />
+    <property name="searchTerm" display-name-key="SearchTerm_Display_Key" description-key="SearchTerm_Desc_Key" of-type="SingleLine.Text" usage="output" required="false" />
+    <property name="selectedId" display-name-key="SelectedId_Display_Key" description-key="SelectedId_Desc_Key" of-type="SingleLine.Text" usage="output" required="false" />
+    <data-set name="users" display-name-key="Users_Display_Key">
+    </data-set>
+    <resources>
+      <code path="index.ts" order="1"/>
+    </resources>
+  </control>
+</manifest>
