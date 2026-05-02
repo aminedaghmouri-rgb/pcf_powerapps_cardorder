@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<customControl namespace="Hermes.Controls" constructor="CardOrderAgentPcfLast67" version="1.0.88" controlFolder="Controls/sa_Hermes.Controls.CardOrderAgentPcfLast67" manifestFile="ControlManifest.xml" bundleFile="bundle.js" />

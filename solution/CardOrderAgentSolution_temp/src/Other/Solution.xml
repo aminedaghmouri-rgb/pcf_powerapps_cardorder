@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ImportExportXml version="9.2.26042.152" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" OrganizationVersion="9.2.26042.152" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.26043.00151" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<ImportExportXml version="9.1.0.643" SolutionPackageVersion="9.1" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <SolutionManifest>
     <!-- Unique Name of Cds Solution-->
     <UniqueName>CardOrderAgentSolution</UniqueName>
@@ -8,7 +8,7 @@
       <LocalizedName description="CardOrderAgentSolution" languagecode="1033" />
     </LocalizedNames>
     <Descriptions />
-    <Version>1.0.80.0</Version>
+    <Version>1.0.77.0</Version>
     <!-- Solution Package Type: Unmanaged(0)/Managed(1)/Both(2)-->
     <Managed>0</Managed>
     <Publisher>
@@ -88,11 +88,7 @@
         </Address>
       </Addresses>
     </Publisher>
-    <RootComponents>
-      <RootComponent type="66" schemaName="sa_Hermes.Controls.CardOrderAgentPcfLast60" behavior="0"/>
-      <RootComponent type="66" schemaName="sa_Hermes.Controls.CardOrderAgentPcfLast65" behavior="0"/>
-      <RootComponent type="66" schemaName="sa_Hermes.Controls.CardOrderAgentPcfLast69" behavior="0"/>
-    </RootComponents>
+    <RootComponents />
     <MissingDependencies />
   </SolutionManifest>
 </ImportExportXml>

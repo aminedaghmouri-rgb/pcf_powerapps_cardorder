@@ -1,6 +1,6 @@
 import { IInputs, IOutputs } from "./generated/ManifestTypes";
 
-export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardControl<IInputs, IOutputs> {
+export class CardOrderAgentPcfLast69 implements ComponentFramework.StandardControl<IInputs, IOutputs> {
     private static readonly DEFAULT_COLUMN_CANDIDATES = {
         createdBy: ["Author", "createdby", "Created By", "Cree par", "Creer par"],
         createdOn: ["Created", "created", "createdon", "Cree", "Creer"],
@@ -11,6 +11,7 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
         products: ["Products", "products", "Items", "items", "Produits", "produits", "OrderItems", "orderItems", "JSONOrderSections", "jsonOrderSections", "JsonOrderSections"],
         quantity: ["Quantit_x00e9_e", "quantity"],
         status: ["StatutCommande", "status", "statuscode"],
+        lieu: ["Lieu", "lieu", "LieuId", "lieuId", "Lieu Lookup", "lieu lookup", "LieuLookup", "lieuLookup"],
         zone: ["Zone", "zone", "ZoneId", "zoneid", "Zone Lookup", "zone lookup", "ZoneLookup", "zoneLookup"],
         subZone: ["Sous_x002d_Zone", "SousZone", "subzone", "SubZone", "sous_x002d_zone"],
         userPhoto: ["UserPhoto", "userphotos", "userphoto"]
@@ -61,6 +62,7 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
     private searchTerm = "";
     private selectedStatus = "all";
     private selectedFilterStatuses = new Set<CanonicalStatus>();
+    private selectedFilterLieux = new Set<string>();
     private selectedFilterZones = new Set<string>();
     private selectedOtherFilter = new Set<"withNotes" | "withoutNotes">();
     private filterDateFrom?: Date;
@@ -301,16 +303,16 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
             context.parameters.quantityColumn.raw,
             context.parameters.createdOnColumn.raw,
             context.parameters.createdByPhotoColumn.raw,
-            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.orderNumber,
-            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.createdBy,
-            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.status,
-            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.quantity,
-            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.modifiedOn,
-            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.createdOn,
-            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.itemId,
-            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.note,
-            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.products,
-            ...CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.userPhoto
+            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.orderNumber,
+            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.createdBy,
+            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.status,
+            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.quantity,
+            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.modifiedOn,
+            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.createdOn,
+            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.itemId,
+            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.note,
+            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.products,
+            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.userPhoto
         ]
             .map((value) => value?.trim() ?? "")
             .filter((value) => value.length > 0);
@@ -614,11 +616,12 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
     }
 
     private getActiveFilterCount(): number {
-        return this.selectedFilterStatuses.size + this.selectedFilterZones.size + this.selectedOtherFilter.size + (this.filterDateFrom || this.filterDateTo ? 1 : 0);
+        return this.selectedFilterStatuses.size + this.selectedFilterLieux.size + this.selectedFilterZones.size + this.selectedOtherFilter.size + (this.filterDateFrom || this.filterDateTo ? 1 : 0);
     }
 
     private clearAllFilters(): void {
         this.selectedFilterStatuses.clear();
+        this.selectedFilterLieux.clear();
         this.selectedFilterZones.clear();
         this.selectedOtherFilter.clear();
         this.filterDateFrom = undefined;
@@ -685,7 +688,7 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
 
             row.appendChild(this.createElement("div", {
                 color: "#344054",
-                flex: "0 0 72px",
+                flex: "0 0 85px",
                 fontFamily: "Inter, Segoe UI, sans-serif",
                 fontSize: "13.8px",
                 fontWeight: "500",
@@ -703,6 +706,12 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
             row.appendChild(chipsWrap);
             return row;
         };
+
+        const lieuChips = Array.from(this.selectedFilterLieux)
+            .sort((a, b) => a.localeCompare(b))
+            .map((lieu) => createChip(lieu, () => {
+                this.selectedFilterLieux.delete(lieu);
+            }));
 
         const zoneChips = Array.from(this.selectedFilterZones)
             .sort((a, b) => a.localeCompare(b))
@@ -736,10 +745,14 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
                 this.selectedFilterStatuses.delete(status);
             }));
 
+        const lieuRow = createRow("Locations", lieuChips);
         const zoneRow = createRow("Zones", zoneChips);
         const otherRow = createRow("Other", otherChips);
         const statusRow = createRow("Status", statusChips);
 
+        if (lieuRow) {
+            container.appendChild(lieuRow);
+        }
         if (zoneRow) {
             container.appendChild(zoneRow);
         }
@@ -770,12 +783,14 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
 
     private filterRecords(records: OrderRecordViewModel[]): OrderRecordViewModel[] {
         const keyword = this.normalize(this.searchTerm.trim());
+        const normalizedLieux = new Set(Array.from(this.selectedFilterLieux).map((lieu) => this.normalize(lieu)));
         const normalizedZones = new Set(Array.from(this.selectedFilterZones).map((zone) => this.normalize(zone)));
         const dateFrom = this.filterDateFrom;
         const dateTo = this.filterDateTo;
 
         return records.filter((record) => {
             const hasNote = record.note.trim().length > 0;
+            const lieuMatch = normalizedLieux.size === 0 || normalizedLieux.has(this.normalize(record.lieu ?? ""));
             const zoneMatch = normalizedZones.size === 0 || normalizedZones.has(this.normalize(record.zone ?? ""));
             const otherMatch = this.selectedOtherFilter.size === 0
                 || (this.selectedOtherFilter.has("withNotes") && hasNote)
@@ -791,7 +806,7 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
                 return true;
             })();
 
-            if (!zoneMatch || !otherMatch || !statusMatch || !dateMatch) {
+            if (!lieuMatch || !zoneMatch || !otherMatch || !statusMatch || !dateMatch) {
                 return false;
             }
 
@@ -805,6 +820,7 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
                 record.status,
                 record.note,
                 record.quantity,
+                record.lieu ?? "",
                 record.zone ?? "",
                 ...record.products.map((item) => `${item.quantity} ${item.label}`)
             ];
@@ -2171,6 +2187,14 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
             { key: "cancelled", label: this.getStatusLabel("cancelled", language) }
         ];
 
+        const lieuOptions = Array.from(
+            new Set(
+                records
+                    .map((record) => (record.lieu ?? "").trim())
+                    .filter((lieu) => lieu.length > 0)
+            )
+        ).sort((left, right) => left.localeCompare(right));
+
         const zoneOptions = Array.from(
             new Set(
                 records
@@ -2180,6 +2204,7 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
         ).sort((left, right) => left.localeCompare(right));
 
         const draftStatuses = new Set(this.selectedFilterStatuses);
+        const draftLieux = new Set(this.selectedFilterLieux);
         const draftZones = new Set(this.selectedFilterZones);
         const draftOther = new Set(this.selectedOtherFilter);
         const showActions = context.parameters.showActions?.raw !== false;
@@ -2262,7 +2287,7 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
         applyBtn.type = "button";
 
         const updateApplyState = (): void => {
-            const hasSelection = draftStatuses.size > 0 || draftZones.size > 0 || draftOther.size > 0 || !!draftDateFrom || !!draftDateTo;
+            const hasSelection = draftStatuses.size > 0 || draftLieux.size > 0 || draftZones.size > 0 || draftOther.size > 0 || !!draftDateFrom || !!draftDateTo;
             applyBtn.disabled = !hasSelection;
             this.applyStyles(applyBtn, {
                 alignItems: "center",
@@ -2330,14 +2355,228 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
             return section;
         };
 
+        const lieuSection = this.createElement("div");
         const zoneSection = this.createElement("div");
         const otherSection = this.createElement("div");
         const statusSection = this.createElement("div");
 
+        const createLieuDropdownSection = (): HTMLDivElement | undefined => {
+            if (lieuOptions.length === 0) return undefined;
+
+            const section = this.createElement("div", {
+                borderBottom: "1px solid #eaecf0",
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+                paddingBottom: "14px"
+            });
+            
+            section.appendChild(this.createElement("div", {
+                color: "#101828",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "14px",
+                fontWeight: "700",
+                lineHeight: "22px"
+            }, "Locations"));
+
+            const dropdownWrapper = this.createElement("div", {
+                position: "relative",
+                width: "100%"
+            });
+
+            // Selected items display
+            const selectedDisplay = this.createElement("div", {
+                background: "#f9fafb",
+                border: "1px solid #d0d5dd",
+                borderRadius: "6px",
+                cursor: "pointer",
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "4px",
+                minHeight: "38px",
+                padding: "6px 8px",
+                alignItems: "center"
+            });
+
+            const placeholder = this.createElement("span", {
+                color: "#667085",
+                fontSize: "13px",
+                fontFamily: "Inter, Segoe UI, sans-serif"
+            }, "Select one or more locations...");
+
+            // Dropdown list
+            const dropdownList = this.createElement("div", {
+                background: "#ffffff",
+                border: "1px solid #d0d5dd",
+                borderRadius: "6px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                display: "none",
+                maxHeight: "200px",
+                overflowY: "auto",
+                position: "absolute",
+                top: "100%",
+                left: "0",
+                right: "0",
+                marginTop: "4px",
+                zIndex: "10002"
+            });
+
+            // Search input
+            const searchInput = this.createElement("input", {
+                border: "none",
+                borderBottom: "1px solid #eaecf0",
+                boxSizing: "border-box",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "13px",
+                outline: "none",
+                padding: "8px 12px",
+                width: "100%"
+            }) as HTMLInputElement;
+            searchInput.placeholder = "Search...";
+
+            const optionsList = this.createElement("div", {
+                padding: "4px 0"
+            });
+
+            const updateDropdownDisplay = () => {
+                selectedDisplay.innerHTML = "";
+                
+                if (draftLieux.size === 0) {
+                    selectedDisplay.appendChild(placeholder);
+                } else {
+                    Array.from(draftLieux).sort().forEach((lieu) => {
+                        const chip = this.createElement("div", {
+                            alignItems: "center",
+                            background: "#121926",
+                            border: "1px solid #121926",
+                            borderRadius: "4px",
+                            color: "#ffffff",
+                            display: "inline-flex",
+                            fontSize: "12px",
+                            fontWeight: "500",
+                            gap: "4px",
+                            padding: "2px 6px"
+                        });
+                        
+                        const label = this.createElement("span", undefined, lieu);
+                        const removeBtn = this.createElement("span", {
+                            cursor: "pointer",
+                            fontWeight: "700"
+                        }, "×");
+                        
+                        removeBtn.addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            draftLieux.delete(lieu);
+                            updateDropdownDisplay();
+                            renderOptions("");
+                            updateApplyState();
+                        });
+                        
+                        chip.appendChild(label);
+                        chip.appendChild(removeBtn);
+                        selectedDisplay.appendChild(chip);
+                    });
+                }
+            };
+
+            const renderOptions = (filterText: string) => {
+                optionsList.innerHTML = "";
+                const filter = filterText.toLowerCase().trim();
+                
+                lieuOptions
+                    .filter((lieu) => !filter || lieu.toLowerCase().includes(filter))
+                    .forEach((lieu) => {
+                        const isSelected = draftLieux.has(lieu);
+                        const option = this.createElement("div", {
+                            alignItems: "center",
+                            cursor: "pointer",
+                            display: "flex",
+                            fontSize: "13px",
+                            fontFamily: "Inter, Segoe UI, sans-serif",
+                            gap: "8px",
+                            padding: "8px 12px"
+                        });
+
+                        const checkbox = this.createElement("input") as HTMLInputElement;
+                        checkbox.type = "checkbox";
+                        checkbox.checked = isSelected;
+                        checkbox.style.cursor = "pointer";
+
+                        const label = this.createElement("span", {
+                            color: "#344054",
+                            flex: "1"
+                        }, lieu);
+
+                        option.addEventListener("click", () => {
+                            if (draftLieux.has(lieu)) {
+                                draftLieux.delete(lieu);
+                            } else {
+                                draftLieux.add(lieu);
+                            }
+                            updateDropdownDisplay();
+                            renderOptions(searchInput.value);
+                            updateApplyState();
+                        });
+
+                        option.addEventListener("mouseenter", () => {
+                            option.style.background = "#f5f5ff";
+                        });
+                        option.addEventListener("mouseleave", () => {
+                            option.style.background = "";
+                        });
+
+                        option.appendChild(checkbox);
+                        option.appendChild(label);
+                        optionsList.appendChild(option);
+                    });
+            };
+
+            searchInput.addEventListener("input", () => {
+                renderOptions(searchInput.value);
+            });
+
+            selectedDisplay.addEventListener("click", () => {
+                const isVisible = dropdownList.style.display === "block";
+                dropdownList.style.display = isVisible ? "none" : "block";
+                if (!isVisible) {
+                    searchInput.value = "";
+                    renderOptions("");
+                    searchInput.focus();
+                }
+            });
+
+            // Close dropdown when clicking outside
+            const closeDropdown = (e: MouseEvent) => {
+                if (!dropdownWrapper.contains(e.target as Node)) {
+                    dropdownList.style.display = "none";
+                }
+            };
+            setTimeout(() => {
+                document.addEventListener("click", closeDropdown);
+            }, 0);
+
+            dropdownList.appendChild(searchInput);
+            dropdownList.appendChild(optionsList);
+            dropdownWrapper.appendChild(selectedDisplay);
+            dropdownWrapper.appendChild(dropdownList);
+            section.appendChild(dropdownWrapper);
+
+            updateDropdownDisplay();
+            renderOptions("");
+
+            return section;
+        };
+
         const renderSections = (): void => {
+            lieuSection.replaceChildren();
             zoneSection.replaceChildren();
             otherSection.replaceChildren();
             statusSection.replaceChildren();
+
+            const lieuDropdown = createLieuDropdownSection();
+            if (lieuDropdown) {
+                lieuSection.appendChild(lieuDropdown);
+            }
 
             const zoneChips = zoneOptions.map((zone) => createChip(zone, draftZones.has(zone), () => {
                 if (draftZones.has(zone)) {
@@ -2388,6 +2627,7 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
         };
 
         renderSections();
+        body.appendChild(lieuSection);
         body.appendChild(zoneSection);
         body.appendChild(otherSection);
         body.appendChild(statusSection);
@@ -2507,6 +2747,7 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
         removeBtn.appendChild(this.createDeleteIcon());
         removeBtn.addEventListener("click", () => {
             draftStatuses.clear();
+            draftLieux.clear();
             draftZones.clear();
             draftOther.clear();
             draftDateFrom = undefined;
@@ -2517,6 +2758,7 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
             if (toInputRef) toInputRef.value = "";
 
             this.selectedFilterStatuses = new Set(draftStatuses);
+            this.selectedFilterLieux = new Set(draftLieux);
             this.selectedFilterZones = new Set(draftZones);
             this.selectedOtherFilter = new Set(draftOther);
             this.render(context, orders);
@@ -2534,6 +2776,7 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
             }
 
             this.selectedFilterStatuses = new Set(draftStatuses);
+            this.selectedFilterLieux = new Set(draftLieux);
             this.selectedFilterZones = new Set(draftZones);
             this.selectedOtherFilter = new Set(draftOther);
             this.filterDateFrom = draftDateFrom;
@@ -2674,62 +2917,67 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
         const orderNumberColumn = this.resolveColumnName(
             orders,
             context.parameters.orderNumberColumn.raw,
-            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.orderNumber
+            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.orderNumber
         );
         const createdByColumn = this.resolveColumnName(
             orders,
             context.parameters.createdByColumn.raw,
-            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.createdBy
+            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.createdBy
         );
         const statusColumn = this.resolveColumnName(
             orders,
             context.parameters.statusColumn.raw,
-            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.status
+            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.status
         );
         const quantityColumn = this.resolveColumnName(
             orders,
             context.parameters.quantityColumn.raw,
-            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.quantity
+            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.quantity
         );
         const itemIdColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.itemId
+            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.itemId
         );
         const modifiedOnColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.modifiedOn
+            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.modifiedOn
         );
         const createdOnColumn = this.resolveColumnName(
             orders,
             context.parameters.createdOnColumn.raw,
-            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.createdOn
+            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.createdOn
         );
         const noteColumn = this.resolveColumnName(
             orders,
             context.parameters.noteColumn?.raw ?? null,
-            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.note
+            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.note
+        );
+        const lieuColumn = this.resolveColumnName(
+            orders,
+            null,
+            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.lieu
         );
         const zoneColumn = this.resolveColumnName(
             orders,
             context.parameters.zoneColumn.raw,
-            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.zone
+            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.zone
         );
         const subZoneColumn = this.resolveColumnName(
             orders,
             context.parameters.subZoneColumn.raw,
-            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.subZone
+            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.subZone
         );
         const productsColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.products
+            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.products
         );
         const createdByPhotoColumn = this.resolveColumnName(
             orders,
             context.parameters.createdByPhotoColumn.raw,
-            CardOrderAgentPcfLast65.DEFAULT_COLUMN_CANDIDATES.userPhoto
+            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.userPhoto
         );
 
         const sourceListColumnName = (context.parameters.sourceListColumn?.raw ?? "Created_SourceList").trim();
@@ -2762,6 +3010,7 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
                     itemIdColumn,
                     modifiedOnColumn,
                     noteColumn,
+                    lieuColumn,
                     zoneColumn,
                     subZoneColumn,
                     productsColumn,
@@ -2790,6 +3039,7 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
         itemIdColumn?: string,
         modifiedOnColumn?: string,
         noteColumn?: string,
+        lieuColumn?: string,
         zoneColumn?: string,
         subZoneColumn?: string,
         productsColumn?: string,
@@ -2807,6 +3057,7 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
         const createdByIdentity = this.getPersonIdentity(record, createdByColumn);
         const createdBy = createdByIdentity?.displayName || this.getDisplayValue(record, createdByColumn, "Unknown user");
         const note = this.getDisplayValue(record, noteColumn, "");
+        const lieu = lieuColumn ? record.getFormattedValue(lieuColumn) : "";
         const zone = zoneColumn ? record.getFormattedValue(zoneColumn) : "";
         const subZone = subZoneColumn ? record.getFormattedValue(subZoneColumn) : "";
         const status = this.getDisplayValue(record, statusColumn, "Unknown");
@@ -2837,6 +3088,7 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
             products,
             takeProducts,
             quantity,
+            lieu,
             zone,
             subZone,
             status
@@ -3967,30 +4219,30 @@ export class CardOrderAgentPcfLast65 implements ComponentFramework.StandardContr
         const normalized = this.toCanonicalStatus(status);
 
         if (normalized === "toPrepare") {
-            return CardOrderAgentPcfLast65.CARD_STATUSES.toPrepare;
+            return CardOrderAgentPcfLast69.CARD_STATUSES.toPrepare;
         }
 
         if (normalized === "inPrep") {
-            return CardOrderAgentPcfLast65.CARD_STATUSES.inPrep;
+            return CardOrderAgentPcfLast69.CARD_STATUSES.inPrep;
         }
 
         if (normalized === "served") {
-            return CardOrderAgentPcfLast65.CARD_STATUSES.served;
+            return CardOrderAgentPcfLast69.CARD_STATUSES.served;
         }
 
         if (normalized === "toClean") {
-            return CardOrderAgentPcfLast65.CARD_STATUSES.toClean;
+            return CardOrderAgentPcfLast69.CARD_STATUSES.toClean;
         }
 
         if (normalized === "cleaned") {
-            return CardOrderAgentPcfLast65.CARD_STATUSES.cleaned;
+            return CardOrderAgentPcfLast69.CARD_STATUSES.cleaned;
         }
 
         if (normalized === "cancelled") {
-            return CardOrderAgentPcfLast65.CARD_STATUSES.cancelled;
+            return CardOrderAgentPcfLast69.CARD_STATUSES.cancelled;
         }
 
-        return CardOrderAgentPcfLast65.CARD_STATUSES.unknown;
+        return CardOrderAgentPcfLast69.CARD_STATUSES.unknown;
     }
 
     private shouldHideItemCount(status: string): boolean {
@@ -4148,6 +4400,7 @@ interface OrderRecordViewModel {
     products: ProductLine[];
     takeProducts: ProductLine[];
     quantity: string;
+    lieu: string;
     zone: string;
     subZone: string;
     status: string;
@@ -4199,9 +4452,9 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
     }
 };
 
-
-
-
+// Alias exports for backward compatibility - keeps Last60 and Last65 alive in Power Apps solution
+export { CardOrderAgentPcfLast69 as CardOrderAgentPcfLast65 };
+export { CardOrderAgentPcfLast69 as CardOrderAgentPcfLast60 };
 
 
 

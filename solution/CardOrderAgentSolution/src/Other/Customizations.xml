@@ -1,23 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ImportExportXml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <Entities />
-  <Roles />
-  <Workflows />
-  <FieldSecurityProfiles />
-  <Templates />
-  <EntityMaps />
-  <EntityRelationships />
-  <OrganizationSettings />
-  <optionsets />
-  <CustomControls>
-    <CustomControl>
-      <Name>sa_Hermes.Controls.CardOrderAgentPcfLast65</Name>
-      <FileName>/Controls/sa_Hermes.Controls.CardOrderAgentPcfLast65/ControlManifest.xml</FileName>
-    </CustomControl>
-  </CustomControls>
-  <SolutionPluginAssemblies />
-  <EntityDataProviders />
-  <Languages>
-    <Language>1033</Language>
-  </Languages>
+<ImportExportXml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" OrganizationVersion="9.2.26042.152" OrganizationSchemaType="Standard" CRMServerServiceabilityVersion="9.2.26043.00151">
+<Entities/><Roles/><Workflows/><FieldSecurityProfiles/><Templates/><EntityMaps/><EntityRelationships/><OrganizationSettings/><optionsets/>
+<CustomControls>
+<CustomControl><Name>sa_Hermes.Controls.CardOrderAgentPcfLast60</Name><FileName>/Controls/sa_Hermes.Controls.CardOrderAgentPcfLast60/ControlManifest.xml</FileName></CustomControl>
+<CustomControl><Name>sa_Hermes.Controls.CardOrderAgentPcfLast65</Name><FileName>/Controls/sa_Hermes.Controls.CardOrderAgentPcfLast65/ControlManifest.xml</FileName></CustomControl>
+<CustomControl><Name>sa_Hermes.Controls.CardOrderAgentPcfLast69</Name><FileName>/Controls/sa_Hermes.Controls.CardOrderAgentPcfLast69/ControlManifest.xml</FileName></CustomControl>
+</CustomControls>
+<EntityDataProviders/><Languages><Language>1033</Language></Languages>
 </ImportExportXml>
