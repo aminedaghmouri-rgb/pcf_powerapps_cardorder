@@ -8,7 +8,7 @@
       <LocalizedName description="CardOrderAgentSolution" languagecode="1033" />
     </LocalizedNames>
     <Descriptions />
-    <Version>1.0.80.0</Version>
+    <Version>1.0.83.0</Version>
     <!-- Solution Package Type: Unmanaged(0)/Managed(1)/Both(2)-->
     <Managed>0</Managed>
     <Publisher>
@@ -92,6 +92,8 @@
       <RootComponent type="66" schemaName="sa_Hermes.Controls.CardOrderAgentPcfLast60" behavior="0"/>
       <RootComponent type="66" schemaName="sa_Hermes.Controls.CardOrderAgentPcfLast65" behavior="0"/>
       <RootComponent type="66" schemaName="sa_Hermes.Controls.CardOrderAgentPcfLast69" behavior="0"/>
+      <RootComponent type="66" schemaName="sa_Hermes.Controls.CardOrderAgentPcfLast70" behavior="0"/>
+      <RootComponent type="66" schemaName="sa_Hermes.Controls.CardOrderAgentPcfLast71" behavior="0"/>
     </RootComponents>
     <MissingDependencies />
   </SolutionManifest>

@@ -1,10 +1,11 @@
 import { IInputs, IOutputs } from "./generated/ManifestTypes";
 
-export class CardOrderAgentPcfLast69 implements ComponentFramework.StandardControl<IInputs, IOutputs> {
+export class CardOrderAgentPcfLast71 implements ComponentFramework.StandardControl<IInputs, IOutputs> {
     private static readonly DEFAULT_COLUMN_CANDIDATES = {
         createdBy: ["Author", "createdby", "Created By", "Cree par", "Creer par"],
         createdOn: ["Created", "created", "createdon", "Cree", "Creer"],
         itemId: ["ID", "Id", "id"],
+        modifiedBy: ["Editor", "modifiedby", "Modified By", "Modifie par", "Modifier par"],
         modifiedOn: ["Modified", "modified", "modifiedon", "Modifie", "Modifier"],
         note: ["Notes", "Note", "notes"],
         orderNumber: ["Title", "titre", "name", "ordernumber"],
@@ -303,16 +304,16 @@ export class CardOrderAgentPcfLast69 implements ComponentFramework.StandardContr
             context.parameters.quantityColumn.raw,
             context.parameters.createdOnColumn.raw,
             context.parameters.createdByPhotoColumn.raw,
-            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.orderNumber,
-            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.createdBy,
-            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.status,
-            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.quantity,
-            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.modifiedOn,
-            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.createdOn,
-            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.itemId,
-            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.note,
-            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.products,
-            ...CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.userPhoto
+            ...CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.orderNumber,
+            ...CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.createdBy,
+            ...CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.status,
+            ...CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.quantity,
+            ...CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.modifiedOn,
+            ...CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.createdOn,
+            ...CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.itemId,
+            ...CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.note,
+            ...CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.products,
+            ...CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.userPhoto
         ]
             .map((value) => value?.trim() ?? "")
             .filter((value) => value.length > 0);
@@ -425,6 +426,7 @@ export class CardOrderAgentPcfLast69 implements ComponentFramework.StandardContr
         const activeFilterCount = this.getActiveFilterCount();
         const hasActiveFilters = activeFilterCount > 0;
         const isCompact = (this.root?.clientWidth ?? this.root?.parentElement?.clientWidth ?? 1024) <= 640;
+        const showActions = context.parameters.showActions?.raw !== false;
 
         const controlsRow = this.createElement("div", {
             alignItems: "stretch",
@@ -598,6 +600,40 @@ export class CardOrderAgentPcfLast69 implements ComponentFramework.StandardContr
                 this.render(context, orders);
             });
             controlsRow.appendChild(clearFiltersButton);
+        }
+
+        // Export to CSV button - visible only when showActions is false
+        if (!showActions) {
+            const exportButton = this.createElement("button", {
+                alignItems: "center",
+                alignSelf: "stretch",
+                background: "#ffffff",
+                border: "0.613636px solid #000000",
+                borderRadius: "5.52px",
+                cursor: "pointer",
+                display: "flex",
+                flex: "0 0 auto",
+                flexShrink: "0",
+                flexDirection: "row",
+                fontFamily: "Inter, Segoe UI, sans-serif",
+                fontSize: "14px",
+                fontWeight: "600",
+                gap: "8px",
+                height: "52px",
+                justifyContent: "center",
+                padding: isCompact ? "0px 8px" : "0px 12px",
+                whiteSpace: "nowrap",
+                width: isCompact ? "auto" : "160px"
+            }) as HTMLButtonElement;
+            exportButton.type = "button";
+            exportButton.appendChild(this.createExportCsvIcon());
+            if (!isCompact) {
+                exportButton.appendChild(this.createElement("span", undefined, "Export to CSV"));
+            }
+            exportButton.addEventListener("click", () => {
+                this.exportToCSV(context, orders);
+            });
+            controlsRow.appendChild(exportButton);
         }
 
         const toolbar = this.createElement("div", {
@@ -2917,67 +2953,72 @@ export class CardOrderAgentPcfLast69 implements ComponentFramework.StandardContr
         const orderNumberColumn = this.resolveColumnName(
             orders,
             context.parameters.orderNumberColumn.raw,
-            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.orderNumber
+            CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.orderNumber
         );
         const createdByColumn = this.resolveColumnName(
             orders,
             context.parameters.createdByColumn.raw,
-            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.createdBy
+            CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.createdBy
         );
         const statusColumn = this.resolveColumnName(
             orders,
             context.parameters.statusColumn.raw,
-            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.status
+            CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.status
         );
         const quantityColumn = this.resolveColumnName(
             orders,
             context.parameters.quantityColumn.raw,
-            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.quantity
+            CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.quantity
         );
         const itemIdColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.itemId
+            CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.itemId
         );
         const modifiedOnColumn = this.resolveColumnName(
             orders,
-            null,
-            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.modifiedOn
+            context.parameters.modifiedOnColumn?.raw ?? null,
+            CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.modifiedOn
+        );
+        const modifiedByColumn = this.resolveColumnName(
+            orders,
+            context.parameters.modifiedByColumn?.raw ?? null,
+            CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.modifiedBy
         );
         const createdOnColumn = this.resolveColumnName(
             orders,
             context.parameters.createdOnColumn.raw,
-            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.createdOn
+            CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.createdOn
         );
         const noteColumn = this.resolveColumnName(
             orders,
             context.parameters.noteColumn?.raw ?? null,
-            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.note
+            CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.note
         );
         const lieuColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.lieu
+            CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.lieu
         );
         const zoneColumn = this.resolveColumnName(
             orders,
             context.parameters.zoneColumn.raw,
-            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.zone
+            CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.zone
         );
         const subZoneColumn = this.resolveColumnName(
             orders,
             context.parameters.subZoneColumn.raw,
-            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.subZone
+            CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.subZone
         );
         const productsColumn = this.resolveColumnName(
             orders,
             null,
-            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.products
+            CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.products
         );
         const createdByPhotoColumn = this.resolveColumnName(
             orders,
             context.parameters.createdByPhotoColumn.raw,
-            CardOrderAgentPcfLast69.DEFAULT_COLUMN_CANDIDATES.userPhoto
+            CardOrderAgentPcfLast71.DEFAULT_COLUMN_CANDIDATES.userPhoto
         );
 
         const sourceListColumnName = (context.parameters.sourceListColumn?.raw ?? "Created_SourceList").trim();
@@ -3009,6 +3050,7 @@ export class CardOrderAgentPcfLast69 implements ComponentFramework.StandardContr
                     createdOnColumn,
                     itemIdColumn,
                     modifiedOnColumn,
+                    modifiedByColumn,
                     noteColumn,
                     lieuColumn,
                     zoneColumn,
@@ -3038,6 +3080,7 @@ export class CardOrderAgentPcfLast69 implements ComponentFramework.StandardContr
         createdOnColumn?: string,
         itemIdColumn?: string,
         modifiedOnColumn?: string,
+        modifiedByColumn?: string,
         noteColumn?: string,
         lieuColumn?: string,
         zoneColumn?: string,
@@ -3056,6 +3099,8 @@ export class CardOrderAgentPcfLast69 implements ComponentFramework.StandardContr
         const orderNumber = this.getDisplayValue(record, orderNumberColumn, "Order without number");
         const createdByIdentity = this.getPersonIdentity(record, createdByColumn);
         const createdBy = createdByIdentity?.displayName || this.getDisplayValue(record, createdByColumn, "Unknown user");
+        const modifiedByIdentity = this.getPersonIdentity(record, modifiedByColumn);
+        const modifiedBy = modifiedByIdentity?.displayName || (modifiedByColumn ? this.getDisplayValue(record, modifiedByColumn, "") : undefined);
         const note = this.getDisplayValue(record, noteColumn, "");
         const lieu = lieuColumn ? record.getFormattedValue(lieuColumn) : "";
         const zone = zoneColumn ? record.getFormattedValue(zoneColumn) : "";
@@ -3081,6 +3126,7 @@ export class CardOrderAgentPcfLast69 implements ComponentFramework.StandardContr
             sourceListDate,
             datasetRecordId: datasetRecordId ?? record.getRecordId(),
             id: itemId,
+            modifiedBy,
             modifiedOn,
             nextStatus: action?.nextStatus,
             note,
@@ -3091,7 +3137,17 @@ export class CardOrderAgentPcfLast69 implements ComponentFramework.StandardContr
             lieu,
             zone,
             subZone,
-            status
+            status,
+            // Raw column values for CSV export
+            lieuColumnValue: lieu,
+            createdByColumnValue: createdBy,
+            createdOnColumnValue: createdOn ? this.formatDate(createdOn) : "",
+            zoneColumnValue: zone,
+            subZoneColumnValue: subZone,
+            modifiedByColumnValue: modifiedBy,
+            modifiedOnColumnValue: modifiedOn ? this.formatDate(modifiedOn) : "",
+            statusColumnValue: status,
+            noteColumnValue: note
         };
     }
 
@@ -3571,6 +3627,53 @@ export class CardOrderAgentPcfLast69 implements ComponentFramework.StandardContr
         line2.setAttribute("x2", "10.5");
         line2.setAttribute("y2", "12.2");
         iconSvg.appendChild(line2);
+
+        return iconSvg;
+    }
+
+    private createExportCsvIcon(): SVGSVGElement {
+        const iconSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        iconSvg.setAttribute("width", "18");
+        iconSvg.setAttribute("height", "18");
+        iconSvg.setAttribute("viewBox", "0 0 18 18");
+        iconSvg.setAttribute("fill", "none");
+        iconSvg.setAttribute("stroke", "#344054");
+        iconSvg.setAttribute("stroke-width", "1.5");
+        iconSvg.setAttribute("stroke-linecap", "round");
+        iconSvg.setAttribute("stroke-linejoin", "round");
+        iconSvg.setAttribute("aria-hidden", "true");
+
+        // Document outline
+        const docPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        docPath.setAttribute("d", "M11 2H4c-.55 0-1 .45-1 1v12c0 .55.45 1 1 1h10c.55 0 1-.45 1-1V6l-4-4z");
+        iconSvg.appendChild(docPath);
+
+        // Folded corner
+        const cornerPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        cornerPath.setAttribute("d", "M11 2v4h4");
+        iconSvg.appendChild(cornerPath);
+
+        // CSV lines (3 horizontal lines representing data rows)
+        const line1 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line1.setAttribute("x1", "6");
+        line1.setAttribute("y1", "9");
+        line1.setAttribute("x2", "12");
+        line1.setAttribute("y2", "9");
+        iconSvg.appendChild(line1);
+
+        const line2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line2.setAttribute("x1", "6");
+        line2.setAttribute("y1", "11.5");
+        line2.setAttribute("x2", "12");
+        line2.setAttribute("y2", "11.5");
+        iconSvg.appendChild(line2);
+
+        const line3 = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line3.setAttribute("x1", "6");
+        line3.setAttribute("y1", "14");
+        line3.setAttribute("x2", "9");
+        line3.setAttribute("y2", "14");
+        iconSvg.appendChild(line3);
 
         return iconSvg;
     }
@@ -4077,6 +4180,92 @@ export class CardOrderAgentPcfLast69 implements ComponentFramework.StandardContr
         });
     }
 
+    private formatDate(value: Date): string {
+        const day = String(value.getDate()).padStart(2, "0");
+        const month = String(value.getMonth() + 1).padStart(2, "0");
+        const year = value.getFullYear();
+        const hours = String(value.getHours()).padStart(2, "0");
+        const minutes = String(value.getMinutes()).padStart(2, "0");
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
+    }
+
+    private exportToCSV(
+        context: ComponentFramework.Context<IInputs>,
+        orders: ComponentFramework.PropertyTypes.DataSet
+    ): void {
+        try {
+            // Get all orders and apply filters
+            const allRecords = this.getOrders(context, orders);
+            const filteredRecords = this.filterRecords(allRecords);
+
+            if (filteredRecords.length === 0) {
+                return;
+            }
+
+            // CSV header
+            const headers = ["Store", "Order Owner", "Creation", "Products", "Zone", "Order Processor", "Serving", "Status", "Notes"];
+            
+            // CSV rows
+            const rows = filteredRecords.map((record) => {
+                // Format products: "Quantité Nom du produit, Quantité Nom du produit"
+                const productsText = record.products
+                    .map((p) => `${p.quantity} ${p.label}`)
+                    .join(", ");
+                
+                // Format zone: "zoneColumn-subZoneColumn"
+                const zoneText = [record.zoneColumnValue, record.subZoneColumnValue]
+                    .filter(Boolean)
+                    .join("-");
+
+                return [
+                    this.escapeCsvValue(record.lieuColumnValue || ""),
+                    this.escapeCsvValue(record.createdByColumnValue || ""),
+                    this.escapeCsvValue(record.createdOnColumnValue || ""),
+                    this.escapeCsvValue(productsText),
+                    this.escapeCsvValue(zoneText),
+                    this.escapeCsvValue(record.modifiedByColumnValue || ""),
+                    this.escapeCsvValue(record.modifiedOnColumnValue || ""),
+                    this.escapeCsvValue(record.statusColumnValue || ""),
+                    this.escapeCsvValue(record.noteColumnValue || "")
+                ];
+            });
+
+            // Combine headers and rows
+            const csvContent = [headers, ...rows]
+                .map((row) => row.join(","))
+                .join("\n");
+
+            // Add BOM for Excel UTF-8 compatibility
+            const bom = "\uFEFF";
+            const blob = new Blob([bom + csvContent], { type: "text/csv;charset=utf-8;" });
+            
+            // Create download link
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `orders_export_${timestamp}.csv`);
+            link.style.visibility = "hidden";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("CSV export failed:", error);
+        }
+    }
+
+    private escapeCsvValue(value: string): string {
+        if (!value) {
+            return "";
+        }
+        // Escape quotes and wrap in quotes if contains comma, quote, or newline
+        if (value.includes(",") || value.includes("\"") || value.includes("\n")) {
+            return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+    }
+
     private formatQuantity(quantity: string, language: LanguageCode): string {
         const trimmedQuantity = quantity.trim();
         const singular = trimmedQuantity === "1";
@@ -4219,30 +4408,30 @@ export class CardOrderAgentPcfLast69 implements ComponentFramework.StandardContr
         const normalized = this.toCanonicalStatus(status);
 
         if (normalized === "toPrepare") {
-            return CardOrderAgentPcfLast69.CARD_STATUSES.toPrepare;
+            return CardOrderAgentPcfLast71.CARD_STATUSES.toPrepare;
         }
 
         if (normalized === "inPrep") {
-            return CardOrderAgentPcfLast69.CARD_STATUSES.inPrep;
+            return CardOrderAgentPcfLast71.CARD_STATUSES.inPrep;
         }
 
         if (normalized === "served") {
-            return CardOrderAgentPcfLast69.CARD_STATUSES.served;
+            return CardOrderAgentPcfLast71.CARD_STATUSES.served;
         }
 
         if (normalized === "toClean") {
-            return CardOrderAgentPcfLast69.CARD_STATUSES.toClean;
+            return CardOrderAgentPcfLast71.CARD_STATUSES.toClean;
         }
 
         if (normalized === "cleaned") {
-            return CardOrderAgentPcfLast69.CARD_STATUSES.cleaned;
+            return CardOrderAgentPcfLast71.CARD_STATUSES.cleaned;
         }
 
         if (normalized === "cancelled") {
-            return CardOrderAgentPcfLast69.CARD_STATUSES.cancelled;
+            return CardOrderAgentPcfLast71.CARD_STATUSES.cancelled;
         }
 
-        return CardOrderAgentPcfLast69.CARD_STATUSES.unknown;
+        return CardOrderAgentPcfLast71.CARD_STATUSES.unknown;
     }
 
     private shouldHideItemCount(status: string): boolean {
@@ -4393,6 +4582,7 @@ interface OrderRecordViewModel {
     sourceListDate?: Date;
     datasetRecordId: string;
     id: string;
+    modifiedBy?: string;
     modifiedOn?: Date;
     nextStatus?: string;
     note: string;
@@ -4404,6 +4594,16 @@ interface OrderRecordViewModel {
     zone: string;
     subZone: string;
     status: string;
+    // Raw column values for CSV export
+    lieuColumnValue?: string;
+    createdByColumnValue?: string;
+    createdOnColumnValue?: string;
+    zoneColumnValue?: string;
+    subZoneColumnValue?: string;
+    modifiedByColumnValue?: string;
+    modifiedOnColumnValue?: string;
+    statusColumnValue?: string;
+    noteColumnValue?: string;
 }
 
 interface ProductLine {
@@ -4453,8 +4653,8 @@ const TRANSLATIONS: Record<LanguageCode, Record<TranslationKey, string>> = {
 };
 
 // Alias exports for backward compatibility - keeps Last60 and Last65 alive in Power Apps solution
-export { CardOrderAgentPcfLast69 as CardOrderAgentPcfLast65 };
-export { CardOrderAgentPcfLast69 as CardOrderAgentPcfLast60 };
+export { CardOrderAgentPcfLast71 as CardOrderAgentPcfLast65 };
+export { CardOrderAgentPcfLast71 as CardOrderAgentPcfLast60 };
 
 
 
